@@ -68,6 +68,182 @@ CREATE TABLE IF NOT EXISTS auth_login_attempts (
 );
 """
 
+# Schedule and venue details below were filled in for the supplied event posters.
+# Ticket prices use the existing Student/Standard/VIP price bands in bookings/routes.py.
+POSTER_EVENTS = [
+    (
+        "OFFSCRIPT",
+        "A creative speaking and performance event with short-form storytelling, spoken word, and live stage prompts.",
+        "2026-11-02 10:00",
+        "Main Auditorium, SNGCET Payyannur",
+        "Cultural & Networking",
+        80,
+    ),
+    (
+        "REVERIQ",
+        "A team-based logic challenge featuring riddles, pattern recognition, and rapid-fire questions.",
+        "2026-11-03 10:00",
+        "CSE Seminar Hall, SNGCET Payyannur",
+        "Technology",
+        80,
+    ),
+    (
+        "THE EXPERT HOUR",
+        "An interactive expert talk followed by audience questions and a short networking session.",
+        "2026-11-04 11:00",
+        "Seminar Hall 1, SNGCET Payyannur",
+        "Workshop",
+        100,
+    ),
+    (
+        "WEB WEAVER",
+        "A practical web design and development challenge to plan, build, and present a responsive website.",
+        "2026-11-05 09:30",
+        "Web Technology Lab, SNGCET Payyannur",
+        "Technology",
+        60,
+    ),
+    (
+        "SKILLCRAFT",
+        "A hands-on skill-building workshop with guided exercises and a short participant showcase.",
+        "2026-11-06 13:00",
+        "Innovation Lab, SNGCET Payyannur",
+        "Workshop",
+        50,
+    ),
+    (
+        "QUIZ BUZZ",
+        "A quiz competition for teams of two. Book two seats for a complete team. Prizes: ₹2,000 for first place and ₹1,000 for second place.",
+        "2026-11-07 13:30",
+        "S1 CSE A,B Classroom, SNGCET Payyannur",
+        "Cultural & Networking",
+        80,
+    ),
+    (
+        "BUG HUNT",
+        "A cybersecurity challenge where participants inspect intentionally vulnerable training applications and report their findings.",
+        "2026-11-09 10:00",
+        "Cyber Range Lab, SNGCET Payyannur",
+        "Cybersecurity",
+        60,
+    ),
+    (
+        "EL DEBATO",
+        "A debate contest with timed rounds, team arguments, rebuttals, and audience judging.",
+        "2026-11-10 09:30",
+        "Main Auditorium, SNGCET Payyannur",
+        "Cultural & Networking",
+        80,
+    ),
+    (
+        "PROJECT EXIT",
+        "A project showcase where teams demonstrate their work, explain design choices, and receive peer feedback.",
+        "2026-11-11 14:00",
+        "Project Studio, SNGCET Payyannur",
+        "Technology",
+        100,
+    ),
+    (
+        "ARCADE ARMAGEDDON",
+        "A campus arcade tournament with bracket-based video game challenges and a live finals round.",
+        "2026-11-12 11:00",
+        "Student Activity Centre, SNGCET Payyannur",
+        "Cultural & Networking",
+        100,
+    ),
+    (
+        "COLD CASE",
+        "A mystery-solving challenge where teams analyze clues, timelines, and case files to reach a conclusion.",
+        "2026-11-13 10:00",
+        "Seminar Hall 2, SNGCET Payyannur",
+        "Cybersecurity",
+        60,
+    ),
+    (
+        "FESTIVAL OF FURY",
+        "A high-energy campus festival featuring stage performances and team activities.",
+        "2026-11-16 09:00",
+        "Open-Air Stage, SNGCET Payyannur",
+        "Cultural & Networking",
+        150,
+    ),
+    (
+        "NOVAHACK",
+        "A campus hackathon for building and pitching practical software prototypes to a judging panel.",
+        "2026-11-17 09:00",
+        "Innovation Hub, SNGCET Payyannur",
+        "AI & Data Science",
+        100,
+    ),
+    (
+        "TURING TRAIL",
+        "A timed programming and problem-solving contest focused on algorithms and computational thinking.",
+        "2026-11-18 09:00",
+        "Computer Science Block, SNGCET Payyannur",
+        "Technology",
+        120,
+    ),
+]
+
+
+def _seed_poster_events(db):
+    """Add the poster events once, assigning them to the current event owner."""
+    owner = db.execute(
+        "SELECT id FROM users WHERE role = 'organizer' ORDER BY id LIMIT 1"
+    ).fetchone()
+    if owner is None:
+        owner = db.execute(
+            "SELECT id FROM users WHERE role = 'admin' ORDER BY id LIMIT 1"
+        ).fetchone()
+    if owner is None:
+        return
+
+    category_ids = {
+        row["name"]: row["id"]
+        for row in db.execute("SELECT id, name FROM event_categories").fetchall()
+    }
+
+    for title, description, date, venue, category, capacity in POSTER_EVENTS:
+        existing = db.execute(
+            "SELECT id, date FROM events WHERE title = ? COLLATE NOCASE",
+            (title,),
+        ).fetchone()
+        if existing is not None:
+            # Move the existing demo EL DEBATO entry into the requested November schedule.
+            # The date guard makes this a one-time update and preserves later organizer edits.
+            if title == "EL DEBATO" and existing["date"] == "2026-10-29":
+                db.execute(
+                    """UPDATE events
+                       SET description = ?, date = ?, venue = ?, category_id = ?,
+                           organizer_id = ?, capacity = ?
+                       WHERE id = ?""",
+                    (
+                        description,
+                        date,
+                        venue,
+                        category_ids[category],
+                        owner["id"],
+                        capacity,
+                        existing["id"],
+                    ),
+                )
+            continue
+
+        db.execute(
+            """INSERT INTO events
+               (title, description, date, venue, category_id, organizer_id, capacity)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (
+                title,
+                description,
+                date,
+                venue,
+                category_ids[category],
+                owner["id"],
+                capacity,
+            ),
+        )
+
 def log_action(user_id, action):
     db = get_db()
     db.execute(
@@ -98,10 +274,6 @@ def init_and_seed_db():
         db.execute("ALTER TABLE bookings ADD COLUMN currency TEXT NOT NULL DEFAULT 'INR'")
     db.commit()
 
-    user_count = db.execute("SELECT COUNT(*) AS cnt FROM users").fetchone()["cnt"]
-    if user_count > 0:
-        return
-
     categories = [
         ("Technology",),
         ("Cybersecurity",),
@@ -112,14 +284,15 @@ def init_and_seed_db():
     ]
     db.executemany("INSERT OR IGNORE INTO event_categories (name) VALUES (?)", categories)
 
+    user_count = db.execute("SELECT COUNT(*) AS cnt FROM users").fetchone()["cnt"]
     on_serverless = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
     production = on_serverless or os.environ.get("FLASK_ENV") == "production"
     seed_demo_data = os.environ.get("SEED_DEMO_DATA", "false" if production else "true").lower() in {
         "1", "true", "yes"
     }
-    if production and seed_demo_data:
+    if user_count == 0 and production and seed_demo_data:
         raise RuntimeError("Set SEED_DEMO_DATA=false in production; demo accounts use known passwords.")
-    if not seed_demo_data:
+    if user_count == 0 and not seed_demo_data:
         admin_email = os.environ.get("INITIAL_ADMIN_EMAIL", "").strip().lower()
         admin_password = os.environ.get("INITIAL_ADMIN_PASSWORD", "")
         if admin_email and len(admin_password) >= 10:
@@ -132,25 +305,23 @@ def init_and_seed_db():
             raise RuntimeError(
                 "Set INITIAL_ADMIN_EMAIL and a 10+ character INITIAL_ADMIN_PASSWORD before initializing the production database."
             )
-        db.commit()
-        return
 
-    # Seed fictional test accounts (Password: Password123!)
-    seed_users = [
-        ("Admin User", "admin@eventhub.local", "555-0100", generate_password_hash("Password123!"), "admin"),
-        ("Olivia Organizer", "organizer@eventhub.local", "555-0101", generate_password_hash("Password123!"), "organizer"),
-        ("Oscar Participant", "oscar@eventhub.local", "555-0102", generate_password_hash("Password123!"), "participant"),
-        ("Alice Participant", "alice@eventhub.local", "555-0201", generate_password_hash("Password123!"), "participant"),
-        ("Bob Participant", "bob@eventhub.local", "555-0202", generate_password_hash("Password123!"), "participant"),
-    ]
-    db.executemany(
-        "INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
-        seed_users
-    )
+    if user_count == 0 and seed_demo_data:
+        # Seed fictional test accounts (Password: Password123!)
+        seed_users = [
+            ("Admin User", "admin@eventhub.local", "555-0100", generate_password_hash("Password123!"), "admin"),
+            ("Olivia Organizer", "organizer@eventhub.local", "555-0101", generate_password_hash("Password123!"), "organizer"),
+            ("Oscar Participant", "oscar@eventhub.local", "555-0102", generate_password_hash("Password123!"), "participant"),
+            ("Alice Participant", "alice@eventhub.local", "555-0201", generate_password_hash("Password123!"), "participant"),
+            ("Bob Participant", "bob@eventhub.local", "555-0202", generate_password_hash("Password123!"), "participant"),
+        ]
+        db.executemany(
+            "INSERT INTO users (name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
+            seed_users
+        )
 
-    # Seed Categories
-    # 15 Events across different categories
-    events = [
+        # 15 sample events across different categories.
+        events = [
         (
             "NextGen Web Engineering Conference",
             "A full-day symposium covering modern Python backends, database architecture, and UI design.",
@@ -256,39 +427,40 @@ def init_and_seed_db():
             "Exhibition Center Main Hall",
             4, 2, 300
         )
-    ]
-    
-    db.executemany(
-        """INSERT OR IGNORE INTO events 
-           (title, description, date, venue, category_id, organizer_id, capacity)
-           VALUES (?, ?, ?, ?, ?, ?, ?)""",
-        events
-    )
+        ]
 
-    # Seed initial bookings and tickets for Alice (user_id=4) and Bob (user_id=5)
-    cursor1 = db.execute(
-        """INSERT INTO bookings
-           (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
-           VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
-        (4, 1, "VIP", 799, 2)
-    )
-    b1_id = cursor1.lastrowid
-    for _ in range(2):
-        db.execute(
-            "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
-            (b1_id, f"TKT-{uuid.uuid4().hex.upper()}")
+        db.executemany(
+            """INSERT OR IGNORE INTO events
+               (title, description, date, venue, category_id, organizer_id, capacity)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            events
         )
 
-    cursor2 = db.execute(
-        """INSERT INTO bookings
-           (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
-           VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
-        (5, 2, "Standard", 299, 1)
-    )
-    b2_id = cursor2.lastrowid
-    db.execute(
-        "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
-        (b2_id, f"TKT-{uuid.uuid4().hex.upper()}")
-    )
+        # Seed initial bookings and tickets for Alice (user_id=4) and Bob (user_id=5).
+        cursor1 = db.execute(
+            """INSERT INTO bookings
+               (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
+               VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
+            (4, 1, "VIP", 799, 2)
+        )
+        b1_id = cursor1.lastrowid
+        for _ in range(2):
+            db.execute(
+                "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
+                (b1_id, f"TKT-{uuid.uuid4().hex.upper()}")
+            )
 
+        cursor2 = db.execute(
+            """INSERT INTO bookings
+               (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
+               VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
+            (5, 2, "Standard", 299, 1)
+        )
+        b2_id = cursor2.lastrowid
+        db.execute(
+            "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
+            (b2_id, f"TKT-{uuid.uuid4().hex.upper()}")
+        )
+
+    _seed_poster_events(db)
     db.commit()
