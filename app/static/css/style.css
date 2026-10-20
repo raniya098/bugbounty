@@ -1022,6 +1022,85 @@ input:focus, select:focus, textarea:focus {
     background-color: var(--brand-50);
 }
 
+/* Organizer registration management */
+.registration-stats {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.registration-stats .card {
+    padding: 1.35rem;
+}
+
+.registration-stats .stat-value {
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    overflow-wrap: anywhere;
+}
+
+.registration-card {
+    padding: clamp(1rem, 2.5vw, 2rem);
+}
+
+.registration-section-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.registration-section-heading h2 {
+    margin-bottom: 0.35rem;
+}
+
+.registration-section-heading .meta {
+    margin-bottom: 0;
+}
+
+.registration-filter {
+    margin-bottom: 1rem;
+}
+
+.registrations-table {
+    min-width: 1080px;
+}
+
+.all-registrations-table {
+    min-width: 1380px;
+}
+
+.registration-ticket-list {
+    display: grid;
+    gap: 0.45rem;
+    min-width: 210px;
+}
+
+.registration-ticket {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.registration-ticket code {
+    overflow-wrap: anywhere;
+}
+
+.check-in-card .filter-bar {
+    margin-bottom: 0;
+}
+
+@media (max-width: 679px) {
+    .registration-section-heading {
+        flex-direction: column;
+    }
+
+    .registration-section-heading > .btn {
+        width: 100%;
+    }
+}
+
 /* Alerts */
 .flash-messages {
     margin-bottom: var(--space-6);

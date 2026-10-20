@@ -3,35 +3,49 @@
 <div class="section-header">
     <div>
         <h1>Organizer Dashboard</h1>
-        <p class="section-subtitle">Create events and monitor attendee registrations</p>
+        <p class="section-subtitle">Manage events and review attendee bookings across your events.</p>
     </div>
     <a href="{{ url_for('organizer.create_event') }}" class="btn btn-primary">+ Create New Event</a>
 </div>
 
 {% set total_events = events | length %}
-{% set total_booked = events | sum(attribute='booked_count') if events else 0 %}
 {% set total_capacity = events | sum(attribute='capacity') if events else 0 %}
 
-<div class="stats-grid">
+<section class="stats-grid registration-stats" aria-label="Organizer overview">
     <div class="card stat-card">
         <span class="badge">Managed Events</span>
         <div class="stat-value">{{ total_events }}</div>
-        <p class="meta">Events assigned to your organizer account</p>
+        <p class="meta">Events assigned to this organizer</p>
     </div>
     <div class="card stat-card">
-        <span class="badge">Tickets Booked</span>
-        <div class="stat-value">{{ total_booked }}</div>
-        <p class="meta">Confirmed attendee seats reserved</p>
+        <span class="badge">Confirmed Bookings</span>
+        <div class="stat-value">{{ registration_stats['confirmed_bookings'] }}</div>
+        <p class="meta">Active booking records</p>
     </div>
     <div class="card stat-card">
-        <span class="badge">Total Capacity</span>
-        <div class="stat-value">{{ total_capacity }}</div>
-        <p class="meta">Combined seat capacity across events</p>
+        <span class="badge">Unique Attendees</span>
+        <div class="stat-value">{{ registration_stats['attendees'] }}</div>
+        <p class="meta">Participants with confirmed bookings</p>
     </div>
-</div>
+    <div class="card stat-card">
+        <span class="badge">Tickets Checked In</span>
+        <div class="stat-value">{{ registration_stats['checked_in'] }} / {{ registration_stats['tickets_sold'] }}</div>
+        <p class="meta">Checked-in tickets / confirmed tickets</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Confirmed Booking Value</span>
+        <div class="stat-value">₹{{ "%.2f"|format(registration_stats['confirmed_value']) }}</div>
+        <p class="meta">Combined event capacity: {{ total_capacity }}</p>
+    </div>
+</section>
 
-<div class="card">
-    <h3>Managed Events</h3>
+<section class="card">
+    <div class="registration-section-heading">
+        <div>
+            <h2>Managed Events</h2>
+            <p class="meta">View event details, edit an event, or manage its attendee check-in.</p>
+        </div>
+    </div>
     <div class="table-responsive">
         <table class="table">
             <thead>
@@ -51,7 +65,7 @@
                     <td>#{{ ev['id'] }}</td>
                     <td><a href="{{ url_for('events.event_detail', event_id=ev['id']) }}"><strong>{{ ev['title'] }}</strong></a></td>
                     <td><span class="badge">{{ ev['category_name'] }}</span></td>
-                    <td>{{ ev['date'] }}</td>
+                    <td>{{ ev['date']|event_datetime }}</td>
                     <td>{{ ev['venue'] }}</td>
                     <td>{{ ev['booked_count'] | default(0, true) }} / {{ ev['capacity'] }}</td>
                     <td>
@@ -69,5 +83,105 @@
             </tbody>
         </table>
     </div>
-</div>
+</section>
+
+<section class="card registration-card">
+    <div class="registration-section-heading">
+        <div>
+            <h2>All attendee bookings</h2>
+            <p class="meta">Showing {{ registrations|length }} matching booking(s). Search across attendee and event details.</p>
+        </div>
+        <a href="{{ url_for('organizer.export_all_registrations', q=search, status=selected_status, event_id=selected_event_id or '') }}" class="btn btn-secondary">Download all as CSV</a>
+    </div>
+
+    <form method="GET" action="{{ url_for('organizer.dashboard') }}" class="filter-bar registration-filter">
+        <label class="sr-only" for="dashboard-registration-search">Search bookings</label>
+        <input id="dashboard-registration-search" type="search" name="q" value="{{ search }}" placeholder="Attendee, email, phone, booking, or event">
+        <label class="sr-only" for="dashboard-booking-status">Booking status</label>
+        <select id="dashboard-booking-status" name="status">
+            <option value="" {% if not selected_status %}selected{% endif %}>All booking statuses</option>
+            <option value="Confirmed" {% if selected_status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+            <option value="Cancelled" {% if selected_status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <label class="sr-only" for="dashboard-event-filter">Event</label>
+        <select id="dashboard-event-filter" name="event_id">
+            <option value="">All events</option>
+            {% for ev in events %}
+            <option value="{{ ev['id'] }}" {% if selected_event_id == ev['id'] %}selected{% endif %}>{{ ev['title'] }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-primary">Apply filters</button>
+        {% if search or selected_status or selected_event_id %}
+        <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-secondary">Clear</a>
+        {% endif %}
+    </form>
+
+    <div class="table-responsive">
+        <table class="table all-registrations-table">
+            <thead>
+                <tr>
+                    <th>Booking</th>
+                    <th>Attendee contact</th>
+                    <th>Event</th>
+                    <th>Ticket selection</th>
+                    <th>Booking total</th>
+                    <th>Booking status</th>
+                    <th>Passes and check-in</th>
+                    <th>Booked at (UTC)</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                <tr>
+                    <td><strong>#{{ reg['booking_id'] }}</strong></td>
+                    <td>
+                        <strong>{{ reg['participant_name'] }}</strong><br>
+                        <a href="mailto:{{ reg['participant_email'] }}">{{ reg['participant_email'] }}</a><br>
+                        {% if reg['participant_phone'] %}
+                        <a href="tel:{{ reg['participant_phone'] }}">{{ reg['participant_phone'] }}</a>
+                        {% else %}
+                        <span class="meta">No phone provided</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('events.event_detail', event_id=reg['event_id']) }}"><strong>{{ reg['event_title'] }}</strong></a><br>
+                        <span class="meta">{{ reg['event_date']|event_datetime }}<br>{{ reg['event_venue'] }}</span>
+                    </td>
+                    <td>
+                        {{ reg['ticket_type'] }} &times; {{ reg['quantity'] }}<br>
+                        <span class="meta">₹{{ "%.2f"|format(reg['unit_price']) }} each</span>
+                    </td>
+                    <td><strong>₹{{ "%.2f"|format(reg['total_price']) }}</strong></td>
+                    <td><span class="badge">{{ reg['booking_status'] }}</span></td>
+                    <td>
+                        <div class="registration-ticket-list">
+                            {% for ticket in reg['tickets'] %}
+                            <div class="registration-ticket">
+                                <code>{{ ticket['ticket_code'] }}</code>
+                                <span class="badge">{{ ticket['status'] }}</span>
+                            </div>
+                            {% else %}
+                            <span class="meta">No ticket record</span>
+                            {% endfor %}
+                        </div>
+                    </td>
+                    <td>{{ reg['created_at'] }}</td>
+                    <td><a href="{{ url_for('organizer.event_registrations', event_id=reg['event_id']) }}" class="btn btn-secondary btn-sm">Manage</a></td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        {% if search or selected_status or selected_event_id %}
+                        No bookings match these filters.
+                        {% else %}
+                        No bookings have been placed yet.
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
 {% endblock %}

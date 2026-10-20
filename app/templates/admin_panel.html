@@ -27,6 +27,7 @@
 
 <div class="card">
     <h3>User Accounts &amp; Roles</h3>
+    <p class="meta">There is one organizer account. Assign the Organizer role to the account you want to use; any previous organizer accounts become participants, and their events move to the selected account.</p>
     <div class="table-responsive">
         <table class="table">
             <thead>
@@ -52,7 +53,7 @@
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <select name="role">
                                 <option value="participant" {% if u['role'] == 'participant' %}selected{% endif %}>participant</option>
-                                <option value="organizer" {% if u['role'] == 'organizer' %}selected{% endif %}>organizer</option>
+                                <option value="organizer" {% if u['role'] == 'organizer' %}selected{% endif %}>organizer (single account)</option>
                                 <option value="admin" {% if u['role'] == 'admin' %}selected{% endif %}>admin</option>
                             </select>
                             <button type="submit" class="btn btn-secondary btn-sm">Update</button>

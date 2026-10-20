@@ -18,7 +18,7 @@
                 <a href="{{ url_for('events.list_events') }}">Events</a>
                 {% if g.user %}
                     <a href="{{ url_for('tickets.my_tickets') }}">My Tickets</a>
-                    <a href="{{ url_for('auth.dashboard') }}">Profile</a>
+                    <a href="{{ url_for('auth.dashboard') }}">My Bookings</a>
                     <a href="{{ url_for('auth.account') }}">Account Settings</a>
                     {% if g.user['role'] in ['organizer', 'admin'] %}
                         <a href="{{ url_for('organizer.dashboard') }}">Organizer</a>

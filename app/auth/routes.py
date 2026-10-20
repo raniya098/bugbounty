@@ -181,9 +181,6 @@ def account():
 @login_required
 def dashboard():
     # Always scope to the server-authenticated session user (never trust request args)
-    if g.user["role"] == "organizer":
-        return redirect(url_for("organizer.dashboard"))
-
     auth_user_id = g.user["id"]
     db = get_db()
 
