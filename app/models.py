@@ -139,7 +139,7 @@ def init_and_seed_db():
     seed_users = [
         ("Admin User", "admin@eventhub.local", "555-0100", generate_password_hash("Password123!"), "admin"),
         ("Olivia Organizer", "organizer@eventhub.local", "555-0101", generate_password_hash("Password123!"), "organizer"),
-        ("Oscar Organizer", "oscar@eventhub.local", "555-0102", generate_password_hash("Password123!"), "organizer"),
+        ("Oscar Participant", "oscar@eventhub.local", "555-0102", generate_password_hash("Password123!"), "participant"),
         ("Alice Participant", "alice@eventhub.local", "555-0201", generate_password_hash("Password123!"), "participant"),
         ("Bob Participant", "bob@eventhub.local", "555-0202", generate_password_hash("Password123!"), "participant"),
     ]
@@ -170,14 +170,14 @@ def init_and_seed_db():
             "Interactive workshop building modular web applications with Flask Blueprints and SQLite.",
             "2026-12-05 14:00",
             "Innovation Lab 301",
-            3, 3, 40
+            3, 2, 40
         ),
         (
             "Annual Campus Founder & Tech Mixer",
             "Connect with student builders, project organizers, and industry mentors over networking sessions.",
             "2026-12-12 17:00",
             "Student Center Terrace",
-            4, 3, 120
+            4, 2, 120
         ),
         (
             "AI Agent Architecture & LLM Security",
@@ -191,7 +191,7 @@ def init_and_seed_db():
             "Container security, pod security standards, and automated CI/CD security posture checks.",
             "2027-01-10 11:00",
             "Virtual / Tech Center Arena",
-            6, 3, 150
+            6, 2, 150
         ),
         (
             "Penetration Testing 101 Bootcamp",
@@ -205,7 +205,7 @@ def init_and_seed_db():
             "Designing accessible, conversion-optimized interfaces using design systems and Figma.",
             "2027-01-20 14:30",
             "Design Studio 4",
-            1, 3, 70
+            1, 2, 70
         ),
         (
             "Data Science & Predictive Analytics Hackathon",
@@ -219,7 +219,7 @@ def init_and_seed_db():
             "Building scalable event-driven microservices using AWS Lambda and serverless databases.",
             "2027-02-14 10:30",
             "Auditorium Block C",
-            6, 3, 90
+            6, 2, 90
         ),
         (
             "Open Source Software Contributors Meetup",
@@ -233,7 +233,7 @@ def init_and_seed_db():
             "Cross-platform mobile application development workshop from scratch to deployment.",
             "2027-03-01 10:00",
             "Lab 204, Tech Wing",
-            3, 3, 50
+            3, 2, 50
         ),
         (
             "Blockchain & Smart Contract Auditing",
@@ -247,7 +247,7 @@ def init_and_seed_db():
             "Understanding qubits, quantum gates, and the future of cryptography.",
             "2027-03-25 15:00",
             "Physics Amphitheater",
-            1, 3, 130
+            1, 2, 130
         ),
         (
             "Global Tech Career & Internship Fair",

@@ -51,7 +51,12 @@ def register():
 @auth_bp.route("/login", methods=["GET", "POST"])
 def login():
     if g.user:
-        return redirect(url_for("auth.dashboard"))
+        dashboard_endpoint = (
+            "organizer.dashboard"
+            if g.user["role"] == "organizer"
+            else "auth.dashboard"
+        )
+        return redirect(url_for(dashboard_endpoint))
 
     if request.method == "POST":
         email = request.form.get("email", "").strip().lower()
@@ -97,7 +102,12 @@ def login():
         session["user_id"] = user["id"]
         log_action(user["id"], "Logged in")
         flash(f"Welcome back, {user['name']}!", "success")
-        return redirect(url_for("auth.dashboard"))
+        dashboard_endpoint = (
+            "organizer.dashboard"
+            if user["role"] == "organizer"
+            else "auth.dashboard"
+        )
+        return redirect(url_for(dashboard_endpoint))
 
     return render_template("login.html")
 
@@ -171,6 +181,9 @@ def account():
 @login_required
 def dashboard():
     # Always scope to the server-authenticated session user (never trust request args)
+    if g.user["role"] == "organizer":
+        return redirect(url_for("organizer.dashboard"))
+
     auth_user_id = g.user["id"]
     db = get_db()
 

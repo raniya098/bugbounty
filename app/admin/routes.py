@@ -47,12 +47,47 @@ def update_role(user_id):
             flash("The last administrator cannot be removed or demoted.", "error")
             return redirect(url_for("admin.panel"))
 
-    if target["role"] == new_role:
+    if target["role"] == "organizer" and new_role != "organizer":
+        organizer_count = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'organizer'"
+        ).fetchone()[0]
+        if organizer_count <= 1:
+            flash(
+                "Keep one organizer account active. Assign Organizer to another user to replace this account.",
+                "error",
+            )
+            return redirect(url_for("admin.panel"))
+
+    previous_organizers = []
+    if new_role == "organizer":
+        previous_organizers = db.execute(
+            "SELECT id FROM users WHERE role = 'organizer' AND id != ?",
+            (user_id,),
+        ).fetchall()
+        if previous_organizers:
+            old_ids = [row["id"] for row in previous_organizers]
+            placeholders = ", ".join("?" for _ in old_ids)
+            db.execute(
+                f"UPDATE events SET organizer_id = ? WHERE organizer_id IN ({placeholders})",
+                (user_id, *old_ids),
+            )
+            db.execute(
+                f"UPDATE users SET role = 'participant' WHERE id IN ({placeholders})",
+                old_ids,
+            )
+
+    if target["role"] == new_role and not previous_organizers:
         flash(f"User #{user_id} already has the {new_role} role.", "success")
         return redirect(url_for("admin.panel"))
 
     db.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
     db.commit()
     log_action(g.user["id"], f"Updated user #{user_id} role to {new_role}")
-    flash(f"User #{user_id} role updated to {new_role}.", "success")
+    if new_role == "organizer" and previous_organizers:
+        flash(
+            f"User #{user_id} is now the only organizer. Existing events were transferred to this account.",
+            "success",
+        )
+    else:
+        flash(f"User #{user_id} role updated to {new_role}.", "success")
     return redirect(url_for("admin.panel"))
