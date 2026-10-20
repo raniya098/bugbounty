@@ -47,6 +47,7 @@
     --radius-xl: 24px;
     --radius-pill: 9999px;
 
+    --shadow-xs: 0 2px 8px rgba(0, 0, 0, 0.2);
     --shadow-sm: 0 4px 16px -4px rgba(0, 0, 0, 0.28);
     --shadow-md: 0 12px 30px -6px rgba(0, 0, 0, 0.34);
     --shadow-lg: 0 24px 48px -12px rgba(83, 48, 167, 0.3), 0 10px 24px -8px rgba(0, 0, 0, 0.38);
@@ -1439,7 +1440,6 @@ input:focus, select:focus, textarea:focus {
     max-width: 680px;
     margin-left: 0;
     margin-right: 0;
-    text-wrap: balance;
 }
 
 .hero p {
