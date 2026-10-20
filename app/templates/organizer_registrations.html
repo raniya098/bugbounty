@@ -2,53 +2,129 @@
 {% block content %}
 <div class="section-header">
     <div>
-        <h1>Registrations: {{ event['title'] }}</h1>
-        <p class="section-subtitle">{{ event['date']|event_datetime }} &bull; {{ event['venue'] }}</p>
+        <h1>Attendee registrations</h1>
+        <p class="section-subtitle">{{ event['title'] }} &bull; {{ event['date']|event_datetime }} &bull; {{ event['venue'] }}</p>
     </div>
-    <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-secondary">&larr; Back to Organizer Dashboard</a>
+    <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-secondary">&larr; Organizer Dashboard</a>
 </div>
 
-<div class="card">
-    <h2>Check In a Ticket</h2>
-    <p class="meta">Enter the ticket code shown on the attendee's pass. Each ticket can be checked in once.</p>
-    <form method="POST" action="{{ url_for('organizer.check_in_ticket', event_id=event['id']) }}" class="filter-bar">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <label class="sr-only" for="ticket-code">Ticket code</label>
-        <input id="ticket-code" name="ticket_code" type="text" placeholder="TKT-…" required autocomplete="off">
-        <button type="submit" class="btn btn-primary">Check In</button>
+<section class="stats-grid registration-stats" aria-label="Event registration summary">
+    <div class="card stat-card">
+        <span class="badge">Confirmed bookings</span>
+        <div class="stat-value">{{ stats['confirmed_bookings'] }}</div>
+        <p class="meta">Active booking records</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Attendees</span>
+        <div class="stat-value">{{ stats['attendees'] }}</div>
+        <p class="meta">Unique confirmed participants</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Tickets checked in</span>
+        <div class="stat-value">{{ checked_in }} / {{ stats['tickets_sold'] }}</div>
+        <p class="meta">Confirmed ticket scans</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Confirmed booking value</span>
+        <div class="stat-value">₹{{ "%.2f"|format(stats['confirmed_value']) }}</div>
+        <p class="meta">{{ [event['capacity'] - stats['tickets_sold'], 0]|max }} seats remaining</p>
+    </div>
+</section>
+
+<section class="card registration-card">
+    <div class="registration-section-heading">
+        <div>
+            <h2>Find and manage attendees</h2>
+            <p class="meta">Search by attendee, email, phone, or booking ID. Ticket codes and check-in status are listed below.</p>
+        </div>
+        <a href="{{ url_for('organizer.export_event_registrations', event_id=event['id'], q=search, status=selected_status) }}" class="btn btn-secondary">Download CSV</a>
+    </div>
+
+    <form method="GET" action="{{ url_for('organizer.event_registrations', event_id=event['id']) }}" class="filter-bar registration-filter">
+        <label class="sr-only" for="registration-search">Search registrations</label>
+        <input id="registration-search" type="search" name="q" value="{{ search }}" placeholder="Name, email, phone, or booking ID">
+        <label class="sr-only" for="registration-status">Booking status</label>
+        <select id="registration-status" name="status">
+            <option value="" {% if not selected_status %}selected{% endif %}>All booking statuses</option>
+            <option value="Confirmed" {% if selected_status == 'Confirmed' %}selected{% endif %}>Confirmed</option>
+            <option value="Cancelled" {% if selected_status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Apply filters</button>
+        {% if search or selected_status %}
+        <a href="{{ url_for('organizer.event_registrations', event_id=event['id']) }}" class="btn btn-secondary">Clear</a>
+        {% endif %}
     </form>
 
     <div class="table-responsive">
-        <table class="table">
+        <table class="table registrations-table">
             <thead>
                 <tr>
-                    <th>Booking ID</th>
-                    <th>Participant Name</th>
-                    <th>Participant Email</th>
-                    <th>Ticket Type</th>
-                    <th>Quantity</th>
-                    <th>Status</th>
-                    <th>Booked At</th>
+                    <th>Booking</th>
+                    <th>Attendee</th>
+                    <th>Ticket selection</th>
+                    <th>Booking total</th>
+                    <th>Booking status</th>
+                    <th>Passes and check-in status</th>
+                    <th>Booked at (UTC)</th>
                 </tr>
             </thead>
             <tbody>
                 {% for reg in registrations %}
                 <tr>
-                    <td>#{{ reg['booking_id'] }}</td>
-                    <td><strong>{{ reg['participant_name'] }}</strong></td>
-                    <td>{{ reg['participant_email'] }}</td>
-                    <td>{{ reg['ticket_type'] }}</td>
-                    <td>{{ reg['quantity'] }}</td>
-                    <td><span class="badge">{{ reg['status'] }}</span></td>
+                    <td><strong>#{{ reg['booking_id'] }}</strong></td>
+                    <td>
+                        <strong>{{ reg['participant_name'] }}</strong><br>
+                        <a href="mailto:{{ reg['participant_email'] }}">{{ reg['participant_email'] }}</a><br>
+                        {% if reg['participant_phone'] %}
+                        <a href="tel:{{ reg['participant_phone'] }}">{{ reg['participant_phone'] }}</a>
+                        {% else %}
+                        <span class="meta">No phone provided</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ reg['ticket_type'] }} &times; {{ reg['quantity'] }}<br>
+                        <span class="meta">₹{{ "%.2f"|format(reg['unit_price']) }} each</span>
+                    </td>
+                    <td><strong>₹{{ "%.2f"|format(reg['total_price']) }}</strong></td>
+                    <td><span class="badge">{{ reg['booking_status'] }}</span></td>
+                    <td>
+                        <div class="registration-ticket-list">
+                            {% for ticket in reg['tickets'] %}
+                            <div class="registration-ticket">
+                                <code>{{ ticket['ticket_code'] }}</code>
+                                <span class="badge">{{ ticket['status'] }}</span>
+                            </div>
+                            {% else %}
+                            <span class="meta">No ticket record</span>
+                            {% endfor %}
+                        </div>
+                    </td>
                     <td>{{ reg['created_at'] }}</td>
                 </tr>
                 {% else %}
                 <tr>
-                    <td colspan="7" class="empty-state">No bookings recorded for this event yet.</td>
+                    <td colspan="7" class="empty-state">
+                        {% if search or selected_status %}
+                        No bookings match these filters.
+                        {% else %}
+                        No bookings recorded for this event yet.
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-</div>
+</section>
+
+<section class="card check-in-card">
+    <h2>Check in a ticket</h2>
+    <p class="meta">Enter a valid ticket code from the attendee list. Each pass can only be checked in once.</p>
+    <form method="POST" action="{{ url_for('organizer.check_in_ticket', event_id=event['id']) }}" class="filter-bar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="sr-only" for="ticket-code">Ticket code</label>
+        <input id="ticket-code" name="ticket_code" type="text" placeholder="TKT-…" required autocomplete="off">
+        <button type="submit" class="btn btn-primary">Check in</button>
+    </form>
+</section>
 {% endblock %}

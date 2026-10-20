@@ -1,4 +1,17 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, abort, g
+import csv
+from io import StringIO
+
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    flash,
+    g,
+    redirect,
+    render_template,
+    request,
+    url_for,
+)
 from app.database import get_db
 from app.models import log_action
 from app.security import role_required
@@ -12,6 +25,86 @@ def _is_future_event_date(value):
         return parse_event_time(value) > parse_event_time(current_event_time())
     except (TypeError, ValueError):
         return False
+
+
+def _get_managed_event(db, event_id):
+    event = db.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
+    if event is None:
+        abort(404)
+    if g.user["role"] != "admin" and event["organizer_id"] != g.user["id"]:
+        abort(403)
+    return event
+
+
+def _registration_filters():
+    search = request.args.get("q", "").strip()[:100]
+    status = request.args.get("status", "").strip()
+    if status not in {"Confirmed", "Cancelled"}:
+        status = ""
+    return search, status
+
+
+def _get_registration_rows(db, event_id, search, status):
+    conditions = ["b.event_id = ?"]
+    params = [event_id]
+    if status:
+        conditions.append("b.status = ?")
+        params.append(status)
+    if search:
+        conditions.append(
+            "(CAST(b.id AS TEXT) LIKE ? OR u.name LIKE ? OR u.email LIKE ? OR COALESCE(u.phone, '') LIKE ?)"
+        )
+        search_pattern = f"%{search}%"
+        params.extend([search_pattern] * 4)
+
+    rows = db.execute(
+        f"""SELECT b.id AS booking_id, b.ticket_type, b.quantity, b.unit_price,
+                      b.currency, b.status AS booking_status, b.created_at,
+                      u.name AS participant_name, u.email AS participant_email,
+                      COALESCE(u.phone, '') AS participant_phone,
+                      t.id AS ticket_id, t.ticket_code, t.status AS ticket_status
+               FROM bookings b
+               JOIN users u ON u.id = b.user_id
+               LEFT JOIN tickets t ON t.booking_id = b.id
+               WHERE {' AND '.join(conditions)}
+               ORDER BY b.created_at DESC, b.id DESC, t.id ASC""",
+        params,
+    ).fetchall()
+
+    bookings = {}
+    for row in rows:
+        booking = bookings.get(row["booking_id"])
+        if booking is None:
+            booking = {
+                "booking_id": row["booking_id"],
+                "ticket_type": row["ticket_type"],
+                "quantity": row["quantity"],
+                "unit_price": row["unit_price"],
+                "currency": row["currency"],
+                "booking_status": row["booking_status"],
+                "created_at": row["created_at"],
+                "participant_name": row["participant_name"],
+                "participant_email": row["participant_email"],
+                "participant_phone": row["participant_phone"],
+                "total_price": row["unit_price"] * row["quantity"],
+                "tickets": [],
+            }
+            bookings[row["booking_id"]] = booking
+        if row["ticket_id"] is not None:
+            booking["tickets"].append({
+                "id": row["ticket_id"],
+                "ticket_code": row["ticket_code"],
+                "status": row["ticket_status"],
+            })
+    return list(bookings.values())
+
+
+def _csv_cell(value):
+    value = "" if value is None else str(value)
+    if value.lstrip(" \t\r\n").startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
 
 @organizer_bp.route("/")
 @role_required("organizer", "admin")
@@ -166,24 +259,78 @@ def edit_event(event_id):
 @role_required("organizer", "admin")
 def event_registrations(event_id):
     db = get_db()
-    event = db.execute("SELECT * FROM events WHERE id = ?", (event_id,)).fetchone()
-    if event is None:
-        abort(404)
+    event = _get_managed_event(db, event_id)
+    search, status = _registration_filters()
+    registrations = _get_registration_rows(db, event_id, search, status)
+    stats = db.execute(
+        """SELECT
+                  COUNT(DISTINCT CASE WHEN status = 'Confirmed' THEN id END) AS confirmed_bookings,
+                  COUNT(DISTINCT CASE WHEN status = 'Confirmed' THEN user_id END) AS attendees,
+                  COALESCE(SUM(CASE WHEN status = 'Confirmed' THEN quantity ELSE 0 END), 0) AS tickets_sold,
+                  COALESCE(SUM(CASE WHEN status = 'Confirmed' THEN quantity * unit_price ELSE 0 END), 0) AS confirmed_value
+           FROM bookings WHERE event_id = ?""",
+        (event_id,),
+    ).fetchone()
+    checked_in = db.execute(
+        """SELECT COUNT(*) AS total
+           FROM tickets t JOIN bookings b ON b.id = t.booking_id
+           WHERE b.event_id = ? AND b.status = 'Confirmed' AND t.status = 'Checked In'""",
+        (event_id,),
+    ).fetchone()["total"]
 
-    if g.user["role"] != "admin" and event["organizer_id"] != g.user["id"]:
-        abort(403)
+    return render_template(
+        "organizer_registrations.html",
+        event=event,
+        registrations=registrations,
+        stats=stats,
+        checked_in=checked_in,
+        search=search,
+        selected_status=status,
+    )
 
-    registrations = db.execute(
-        """SELECT b.id AS booking_id, b.ticket_type, b.quantity, b.status, b.created_at,
-                  u.name AS participant_name, u.email AS participant_email
-           FROM bookings b
-           JOIN users u ON b.user_id = u.id
-           WHERE b.event_id = ?
-           ORDER BY b.created_at DESC""",
-        (event_id,)
-    ).fetchall()
 
-    return render_template("organizer_registrations.html", event=event, registrations=registrations)
+@organizer_bp.route("/events/<int:event_id>/registrations/export.csv")
+@role_required("organizer", "admin")
+def export_event_registrations(event_id):
+    db = get_db()
+    event = _get_managed_event(db, event_id)
+    search, status = _registration_filters()
+    registrations = _get_registration_rows(db, event_id, search, status)
+
+    output = StringIO(newline="")
+    output.write("\ufeff")
+    writer = csv.writer(output)
+    writer.writerow([
+        "Booking ID", "Attendee name", "Attendee email", "Attendee phone",
+        "Event", "Ticket type", "Quantity", "Unit price", "Booking total",
+        "Currency", "Booking status", "Booked at", "Tickets and statuses",
+    ])
+    for booking in registrations:
+        ticket_summary = "; ".join(
+            f"{ticket['ticket_code']} ({ticket['status']})"
+            for ticket in booking["tickets"]
+        )
+        writer.writerow([
+            _csv_cell(booking["booking_id"]),
+            _csv_cell(booking["participant_name"]),
+            _csv_cell(booking["participant_email"]),
+            _csv_cell(booking["participant_phone"]),
+            _csv_cell(event["title"]),
+            _csv_cell(booking["ticket_type"]),
+            _csv_cell(booking["quantity"]),
+            _csv_cell(booking["unit_price"]),
+            _csv_cell(booking["total_price"]),
+            _csv_cell(booking["currency"]),
+            _csv_cell(booking["booking_status"]),
+            _csv_cell(booking["created_at"]),
+            _csv_cell(ticket_summary),
+        ])
+
+    response = Response(output.getvalue(), content_type="text/csv; charset=utf-8")
+    response.headers["Content-Disposition"] = (
+        f'attachment; filename="event-{event_id}-registrations.csv"'
+    )
+    return response
 
 
 @organizer_bp.route("/events/<int:event_id>/check-in", methods=["POST"])
