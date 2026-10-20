@@ -183,6 +183,14 @@ POSTER_EVENTS = [
         "Technology",
         120,
     ),
+    (
+        "CLOUD COMPUTING WORKSHOP",
+        "A hands-on introduction to cloud services: deploy a simple application, configure cloud storage, and explore scaling and access management.",
+        "2026-11-19 10:00",
+        "Cloud Computing Lab, SNGCET Payyannur",
+        "Cloud Computing",
+        80,
+    ),
 ]
 
 
