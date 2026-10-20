@@ -3,7 +3,7 @@
 ## Run locally
 
 1. Install the packages listed in `requirements.txt` in your Python environment.
-2. Copy `.env.example` to `.env` and set a private `SECRET_KEY`.
+2. Set `SECRET_KEY` in your local environment before starting the app. Flask does not load `.env` files automatically in this project.
 3. Keep `SEED_DEMO_DATA=true` for a local demo database. The sample accounts all use the same demo password and must never be exposed as production accounts.
 4. Start the app with `python run.py` and open `http://127.0.0.1:5000`.
 
@@ -17,7 +17,21 @@
 
 ## Important Vercel storage limitation
 
-This app currently uses SQLite. Vercel serverless filesystems are not durable, so a SQLite file stored there can disappear or differ between instances. `DATABASE_PATH` only selects a file path; it does not make that file persistent. Do not use the current SQLite setup for real customer bookings on Vercel. Before production, migrate the database layer to a managed persistent database and configure its credentials. This requires choosing and provisioning that database service.
+The app exposes its Flask instance from `app/app.py`, which is a Vercel-recognized Flask entry point. The Vercel runtime uses a read-only filesystem except for temporary `/tmp` storage, so the default Vercel SQLite path is `/tmp/eventhub.db` to allow the function to start.
+
+Temporary storage is not durable or shared across serverless instances. Accounts, events, and bookings may disappear after a cold start or differ between instances. This is only suitable for a disposable preview. For a reliable competition or real customer bookings, migrate the database layer to a managed persistent database and configure its connection string; setting `DATABASE_PATH` to another file path does not make SQLite persistent.
+
+### Vercel environment variables
+
+In the Vercel project, open **Settings → Environment Variables** and configure:
+
+- `SECRET_KEY`: a long, random secret used to sign sessions.
+- `SEED_DEMO_DATA`: set to `false` for production.
+- `INITIAL_ADMIN_EMAIL`: the initial administrator's email.
+- `INITIAL_ADMIN_PASSWORD`: a private password of at least 10 characters.
+- `DATABASE_PATH`: leave unset for the temporary `/tmp/eventhub.db` preview, or set it only when the code has been migrated to a persistent database adapter.
+
+Redeploy after changing environment variables. The app deliberately fails startup if `SECRET_KEY` or the first administrator credentials are missing; this prevents insecure sessions or a deployment with no administrator account.
 
 ## Payments and email
 
