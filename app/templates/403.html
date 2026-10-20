@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card auth-card">
+    <span class="badge">Error 403</span>
+    <h1>Access Denied</h1>
+    <p class="desc">You do not have permission to view this page or resource.</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary btn-block">Return to Home</a>
+</div>
+{% endblock %}

@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-header">
+    <div>
+        <h1>My Tickets</h1>
+        <p class="section-subtitle">
+            Showing <strong>{{ tickets | length }}</strong> ticket{% if (tickets | length) != 1 %}s{% endif %} issued to {{ g.user['name'] }}
+        </p>
+    </div>
+    <div class="action-group">
+        <a href="{{ url_for('auth.dashboard') }}" class="btn btn-secondary">Participant Dashboard</a>
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-primary">Book More Events</a>
+    </div>
+</div>
+
+<div class="card">
+    {% if tickets %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Ticket ID</th>
+                    <th>Ticket Code</th>
+                    <th>Booking Ref</th>
+                    <th>Event Name</th>
+                    <th>Event Date &amp; Venue</th>
+                    <th>Ticket Type</th>
+                    <th>Ticket Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td>#{{ t['id'] }}</td>
+                    <td><code>{{ t['ticket_code'] }}</code></td>
+                    <td>
+                        <a href="{{ url_for('bookings.confirmation', booking_id=t['booking_id']) }}" title="View Booking Confirmation #{{ t['booking_id'] }}">
+                            <code>BK-{{ t['booking_id'] }}</code>
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('events.event_detail', event_id=t['event_id']) }}">
+                            <strong>{{ t['event_title'] }}</strong>
+                        </a>
+                    </td>
+                    <td>{{ t['event_date'] }} &bull; {{ t['venue'] }}</td>
+                    <td>{{ t['ticket_type'] }}</td>
+                    <td><span class="badge">{{ t['status'] }}</span></td>
+                    <td>
+                        <div class="action-group">
+                            <a href="{{ url_for('tickets.ticket_detail', ticket_id=t['id']) }}" class="btn btn-primary btn-sm">View Pass</a>
+                            <a href="{{ url_for('bookings.confirmation', booking_id=t['booking_id']) }}" class="btn btn-secondary btn-sm">Receipt</a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No Tickets Issued Yet</h3>
+        <p class="meta">You currently have no tickets under your account. Browse upcoming events to reserve your seat.</p>
+        <div style="margin-top: 1.25rem;">
+            <a href="{{ url_for('events.list_events') }}" class="btn btn-primary">Explore Events &amp; Book Tickets</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

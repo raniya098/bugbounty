@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EventHub | Event Registration & Ticket Booking</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container nav-container">
+            <a href="{{ url_for('index') }}" class="brand">Event<span>Hub</span></a>
+            <button type="button" class="nav-toggle" id="nav-toggle" aria-expanded="false" aria-controls="primary-nav" aria-label="Toggle navigation menu">
+                Menu &#9776;
+            </button>
+            <nav class="nav-links" id="primary-nav" aria-label="Primary navigation">
+                <a href="{{ url_for('index') }}">Home</a>
+                <a href="{{ url_for('events.list_events') }}">Events</a>
+                {% if g.user %}
+                    <a href="{{ url_for('tickets.my_tickets') }}">My Tickets</a>
+                    <a href="{{ url_for('auth.dashboard') }}">Profile</a>
+                    {% if g.user['role'] in ['organizer', 'admin'] %}
+                        <a href="{{ url_for('organizer.dashboard') }}">Organizer</a>
+                    {% endif %}
+                    {% if g.user['role'] == 'admin' %}
+                        <a href="{{ url_for('admin.panel') }}">Admin</a>
+                    {% endif %}
+                    <span class="user-pill">{{ g.user['name'] }} ({{ g.user['role'] }})</span>
+                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('auth.login') }}">Login</a>
+                    <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>
+                {% endif %}
+            </nav>
+        </div>
+    </header>
+
+    <main class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2026 EventHub &mdash; Fictional Event Registration &amp; Ticket Booking Platform</p>
+        </div>
+    </footer>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

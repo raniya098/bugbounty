@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card" style="max-width: 760px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+        <div>
+            <span class="badge">{{ booking['status'] }}</span>
+            <h1>Booking Confirmation #{{ booking['id'] }}</h1>
+        </div>
+        <button type="button" onclick="window.print()" class="btn btn-secondary btn-sm">Print Confirmation</button>
+    </div>
+
+    <div class="detail-list">
+        <div class="detail-row">
+            <strong>Event Title</strong>
+            <span><strong>{{ booking['event_title'] }}</strong></span>
+        </div>
+        <div class="detail-row">
+            <strong>Date &amp; Venue</strong>
+            <span>{{ booking['event_date'] }} &bull; {{ booking['venue'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Primary Attendee</strong>
+            <span>{{ booking['user_name'] }} ({{ booking['user_email'] }})</span>
+        </div>
+        <div class="detail-row">
+            <strong>Ticket Selection</strong>
+            <span>{{ booking['ticket_type'] }} Pass &times; {{ booking['quantity'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Unit Price</strong>
+            <span>${{ "%.2f"|format(unit_price) }}</span>
+        </div>
+        <div class="detail-row" style="border-bottom: 2px solid var(--border-strong); padding-bottom: 0.75rem;">
+            <strong>Total Amount Paid</strong>
+            <strong style="color: var(--brand-700); font-size: 1.1rem;">${{ "%.2f"|format(total_price) }}</strong>
+        </div>
+    </div>
+
+    <h3 style="margin-top: 2rem; margin-bottom: 0.75rem;">Issued Entry Passes</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Pass ID</th>
+                    <th>Secure Ticket Code</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in tickets %}
+                <tr>
+                    <td>#{{ t['id'] }}</td>
+                    <td><code>{{ t['ticket_code'] }}</code></td>
+                    <td><span class="badge">{{ t['status'] }}</span></td>
+                    <td><a href="{{ url_for('tickets.ticket_detail', ticket_id=t['id']) }}" class="btn btn-secondary btn-sm">View Pass</a></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div style="margin-top: 2rem; display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{{ url_for('tickets.my_tickets') }}" class="btn btn-primary">View All My Tickets</a>
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary">Browse More Events</a>
+    </div>
+</div>
+{% endblock %}

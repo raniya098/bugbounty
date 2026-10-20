@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card auth-card">
+    <span class="badge">{{ ticket['status'] }}</span>
+    <h2>Event Entry Pass</h2>
+    <div class="ticket-code-box">{{ ticket['ticket_code'] }}</div>
+    <div class="detail-list">
+        <div class="detail-row">
+            <strong>Ticket ID</strong>
+            <span>#{{ ticket['id'] }} (Booking #{{ ticket['booking_id'] }})</span>
+        </div>
+        <div class="detail-row">
+            <strong>Event</strong>
+            <span>{{ ticket['event_title'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Date &amp; Time</strong>
+            <span>{{ ticket['event_date'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Venue</strong>
+            <span>{{ ticket['venue'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Ticket Type</strong>
+            <span>{{ ticket['ticket_type'] }}</span>
+        </div>
+        <div class="detail-row">
+            <strong>Attendee</strong>
+            <span>{{ ticket['holder_name'] }} ({{ ticket['holder_email'] }})</span>
+        </div>
+    </div>
+    <button type="button" onclick="window.print()" class="btn btn-primary btn-block">Print / Save Pass as PDF</button>
+    <a href="{{ url_for('tickets.my_tickets') }}" class="btn btn-secondary btn-block">&larr; Back to My Tickets</a>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-header">
+    <div>
+        <h1>Admin Management Panel</h1>
+        <p class="section-subtitle">Platform-wide user roles, event oversight, and security audit logs</p>
+    </div>
+</div>
+
+<div class="stats-grid">
+    <div class="card stat-card">
+        <span class="badge">Total Users</span>
+        <div class="stat-value">{{ users | length }}</div>
+        <p class="meta">Registered platform accounts</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Active Events</span>
+        <div class="stat-value">{{ events | length }}</div>
+        <p class="meta">Published events across categories</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Audit Entries</span>
+        <div class="stat-value">{{ logs | length }}</div>
+        <p class="meta">Recent recorded system actions</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>User Accounts &amp; Roles</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Current Role</th>
+                    <th>Change Role</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td>#{{ u['id'] }}</td>
+                    <td><strong>{{ u['name'] }}</strong></td>
+                    <td>{{ u['email'] }}</td>
+                    <td>{{ u['phone'] }}</td>
+                    <td><span class="badge">{{ u['role'] }}</span></td>
+                    <td>
+                        <form method="POST" action="{{ url_for('admin.update_role', user_id=u['id']) }}" class="inline-form">
+                            <select name="role">
+                                <option value="participant" {% if u['role'] == 'participant' %}selected{% endif %}>participant</option>
+                                <option value="organizer" {% if u['role'] == 'organizer' %}selected{% endif %}>organizer</option>
+                                <option value="admin" {% if u['role'] == 'admin' %}selected{% endif %}>admin</option>
+                            </select>
+                            <button type="submit" class="btn btn-secondary btn-sm">Update</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>All Platform Events</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Title</th>
+                    <th>Organizer</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Booked / Capacity</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in events %}
+                <tr>
+                    <td>#{{ ev['id'] }}</td>
+                    <td><a href="{{ url_for('events.event_detail', event_id=ev['id']) }}"><strong>{{ ev['title'] }}</strong></a></td>
+                    <td>{{ ev['organizer_name'] }}</td>
+                    <td><span class="badge">{{ ev['category_name'] }}</span></td>
+                    <td>{{ ev['date'] }}</td>
+                    <td>{{ ev['booked_count'] | default(0, true) }} / {{ ev['capacity'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Audit Logs</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Timestamp</th>
+                    <th>User</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td>#{{ log['id'] }}</td>
+                    <td>{{ log['timestamp'] }}</td>
+                    <td>{{ log['user_email'] or 'System' }}</td>
+                    <td>{{ log['action'] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="4" class="empty-state">No audit logs recorded yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

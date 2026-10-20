@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-header">
+    <div>
+        <h1>Participant Dashboard</h1>
+        <p class="section-subtitle">Welcome, {{ g.user['name'] }} &mdash; view your profile, upcoming events, and booking history</p>
+    </div>
+    <div class="action-group">
+        <a href="{{ url_for('tickets.my_tickets') }}" class="btn btn-secondary">View My Tickets ({{ total_tickets }})</a>
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-primary">Browse Events</a>
+    </div>
+</div>
+
+<!-- Derived Summary Counts from Actual Database Records -->
+<div class="stats-grid">
+    <div class="card stat-card">
+        <span class="badge">Total Tickets</span>
+        <div class="stat-value">{{ total_tickets }}</div>
+        <p class="meta">{{ active_tickets }} active entry pass{% if active_tickets != 1 %}es{% endif %} issued to your account</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Upcoming Events</span>
+        <div class="stat-value">{{ upcoming_events | length }}</div>
+        <p class="meta">Distinct events you are registered to attend</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Total Bookings</span>
+        <div class="stat-value">{{ total_bookings }}</div>
+        <p class="meta">Completed booking transactions on record</p>
+    </div>
+</div>
+
+<div class="dashboard-layout">
+    <!-- Left Column: Scoped Participant Profile -->
+    <div class="card">
+        <h3>My Profile</h3>
+        <p class="meta">Account details for your current session</p>
+        <div class="detail-list">
+            <div class="detail-row">
+                <strong>Full Name</strong>
+                <span>{{ g.user['name'] }}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Email Address</strong>
+                <span>{{ g.user['email'] }}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Phone</strong>
+                <span>{{ g.user['phone'] if g.user['phone'] else 'Not provided' }}</span>
+            </div>
+            <div class="detail-row">
+                <strong>Account Role</strong>
+                <span class="badge">{{ g.user['role'] }}</span>
+            </div>
+        </div>
+        <a href="{{ url_for('tickets.my_tickets') }}" class="btn btn-secondary btn-block">Go to My Tickets</a>
+    </div>
+
+    <!-- Right Column: Upcoming Events & Booking History -->
+    <div>
+        <!-- Upcoming Registered Events -->
+        <div class="card">
+            <div class="section-header" style="margin-bottom: 0.75rem;">
+                <div>
+                    <h3>Upcoming Registered Events</h3>
+                    <p class="meta">Events with confirmed passes under your account</p>
+                </div>
+            </div>
+
+            {% if upcoming_events %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Event</th>
+                            <th>Category</th>
+                            <th>Date &amp; Time</th>
+                            <th>Venue</th>
+                            <th>Your Tickets</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ev in upcoming_events %}
+                        <tr>
+                            <td>
+                                <a href="{{ url_for('events.event_detail', event_id=ev['event_id']) }}">
+                                    <strong>{{ ev['event_title'] }}</strong>
+                                </a>
+                            </td>
+                            <td><span class="badge">{{ ev['category_name'] }}</span></td>
+                            <td>{{ ev['event_date'] }}</td>
+                            <td>{{ ev['venue'] }}</td>
+                            <td><strong>{{ ev['user_tickets_for_event'] }}</strong> pass{% if ev['user_tickets_for_event'] != 1 %}es{% endif %}</td>
+                            <td>
+                                <div class="action-group">
+                                    <a href="{{ url_for('events.event_detail', event_id=ev['event_id']) }}" class="btn btn-secondary btn-sm">Event Page</a>
+                                    <a href="{{ url_for('tickets.my_tickets') }}" class="btn btn-primary btn-sm">My Passes</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <h4>No Upcoming Events</h4>
+                <p class="meta">You do not have any upcoming event registrations yet.</p>
+                <div style="margin-top: 1rem;">
+                    <a href="{{ url_for('events.list_events') }}" class="btn btn-primary btn-sm">Explore Upcoming Events</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Complete Booking History -->
+        <div class="card">
+            <div class="section-header" style="margin-bottom: 0.75rem;">
+                <div>
+                    <h3>Booking History</h3>
+                    <p class="meta">All booking references and receipts associated with your account</p>
+                </div>
+            </div>
+
+            {% if bookings %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Booking Ref</th>
+                            <th>Event</th>
+                            <th>Event Date</th>
+                            <th>Tier &amp; Qty</th>
+                            <th>Status</th>
+                            <th>Booked On</th>
+                            <th>Receipt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in bookings %}
+                        <tr>
+                            <td><code>#{{ b['id'] }}</code></td>
+                            <td>
+                                <a href="{{ url_for('events.event_detail', event_id=b['event_id']) }}">
+                                    <strong>{{ b['event_title'] }}</strong>
+                                </a>
+                            </td>
+                            <td>{{ b['event_date'] }}</td>
+                            <td>{{ b['quantity'] }} &times; {{ b['ticket_type'] }}</td>
+                            <td><span class="badge">{{ b['status'] }}</span></td>
+                            <td>{{ b['created_at'] }}</td>
+                            <td>
+                                <a href="{{ url_for('bookings.confirmation', booking_id=b['id']) }}" class="btn btn-secondary btn-sm">
+                                    View Receipt
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <h4>No Booking History Found</h4>
+                <p class="meta">Once you book tickets for an event, your booking reference and receipt will appear here.</p>
+                <div style="margin-top: 1rem;">
+                    <a href="{{ url_for('events.list_events') }}" class="btn btn-primary btn-sm">Book Your First Event</a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

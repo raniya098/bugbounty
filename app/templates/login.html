@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card auth-card">
+    <div style="text-align: center; margin-bottom: 1.5rem;">
+        <span class="badge">Secure Portal</span>
+        <h2>Sign In to EventHub</h2>
+        <p class="meta">Access your dashboard, passes, and role permissions.</p>
+    </div>
+
+    <form method="POST" action="{{ url_for('auth.login') }}" class="form-stack" id="login-form">
+        <div class="form-group">
+            <label for="email">Email Address</label>
+            <input type="email" id="email" name="email" placeholder="alice@eventhub.local" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="password-wrap" style="position: relative; display: flex; align-items: center;">
+                <input type="password" id="password" name="password" required autocomplete="current-password" style="width: 100%; padding-right: 2.75rem;">
+                <button type="button" id="toggle-password" aria-label="Show password" style="position: absolute; right: 0.75rem; background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">Show</button>
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" id="login-submit-btn">Sign In</button>
+    </form>
+
+    <div class="hint-box">
+        <p><strong>Authorized Lab Demo Testing (Click to auto-fill):</strong></p>
+        <div class="demo-btn-group">
+            <button type="button" class="demo-btn" data-demo-email="alice@eventhub.local">Alice (Participant)[cite: 3]</button>
+            <button type="button" class="demo-btn" data-demo-email="bob@eventhub.local">Bob (Participant)[cite: 3]</button>
+            <button type="button" class="demo-btn" data-demo-email="organizer@eventhub.local">Olivia (Organizer)[cite: 3]</button>
+            <button type="button" class="demo-btn" data-demo-email="admin@eventhub.local">System Admin[cite: 3]</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    // Password toggle
+    const pwdInput = document.getElementById("password");
+    const toggleBtn = document.getElementById("toggle-password");
+    if (pwdInput && toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            const isPwd = pwdInput.type === "password";
+            pwdInput.type = isPwd ? "text" : "password";
+            toggleBtn.textContent = isPwd ? "Hide" : "Show";
+        });
+    }
+
+    // Loading state
+    const form = document.getElementById("login-form");
+    const btn = document.getElementById("login-submit-btn");
+    if (form && btn) {
+        form.addEventListener("submit", () => {
+            btn.disabled = true;
+            btn.textContent = "Signing In...";
+        });
+    }
+});
+</script>
+{% endblock %}

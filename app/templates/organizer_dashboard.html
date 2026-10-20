@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-header">
+    <div>
+        <h1>Organizer Dashboard</h1>
+        <p class="section-subtitle">Create events and monitor attendee registrations</p>
+    </div>
+    <a href="{{ url_for('organizer.create_event') }}" class="btn btn-primary">+ Create New Event</a>
+</div>
+
+{% set total_events = events | length %}
+{% set total_booked = events | sum(attribute='booked_count') if events else 0 %}
+{% set total_capacity = events | sum(attribute='capacity') if events else 0 %}
+
+<div class="stats-grid">
+    <div class="card stat-card">
+        <span class="badge">Managed Events</span>
+        <div class="stat-value">{{ total_events }}</div>
+        <p class="meta">Events assigned to your organizer account</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Tickets Booked</span>
+        <div class="stat-value">{{ total_booked }}</div>
+        <p class="meta">Confirmed attendee seats reserved</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Total Capacity</span>
+        <div class="stat-value">{{ total_capacity }}</div>
+        <p class="meta">Combined seat capacity across events</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Managed Events</h3>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Event Title</th>
+                    <th>Category</th>
+                    <th>Date</th>
+                    <th>Venue</th>
+                    <th>Booked / Capacity</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ev in events %}
+                <tr>
+                    <td>#{{ ev['id'] }}</td>
+                    <td><a href="{{ url_for('events.event_detail', event_id=ev['id']) }}"><strong>{{ ev['title'] }}</strong></a></td>
+                    <td><span class="badge">{{ ev['category_name'] }}</span></td>
+                    <td>{{ ev['date'] }}</td>
+                    <td>{{ ev['venue'] }}</td>
+                    <td>{{ ev['booked_count'] | default(0, true) }} / {{ ev['capacity'] }}</td>
+                    <td>
+                        <div class="action-group">
+                            <a href="{{ url_for('organizer.edit_event', event_id=ev['id']) }}" class="btn btn-secondary btn-sm">Edit</a>
+                            <a href="{{ url_for('organizer.event_registrations', event_id=ev['id']) }}" class="btn btn-secondary btn-sm">Registrations</a>
+                        </div>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">You have not created any events yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

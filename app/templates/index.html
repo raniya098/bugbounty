@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+    <span class="hero-eyebrow">Campus &amp; Tech Event Platform</span>
+    <h1>Book Your Spot at Premier Campus &amp; Tech Events</h1>
+    <p>Discover conferences, hands-on workshops, and networking sessions with instant digital ticket confirmation.</p>
+    <div class="hero-actions">
+        <a href="{{ url_for('events.list_events') }}" class="btn btn-primary">Explore Events</a>
+        {% if not g.user %}
+            <a href="{{ url_for('auth.register') }}" class="btn btn-outline">Create Free Account</a>
+        {% endif %}
+    </div>
+</section>
+
+<div class="stats-grid">
+    <div class="card stat-card">
+        <span class="badge">Instant Access</span>
+        <h3>Digital Event Passes</h3>
+        <p class="meta">Receive unique, verifiable ticket codes immediately upon booking confirmation.</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Verified Organizers</span>
+        <h3>Curated Tech Sessions</h3>
+        <p class="meta">Hands-on workshops, AppSec summits, and conferences hosted by domain leads.</p>
+    </div>
+    <div class="card stat-card">
+        <span class="badge">Live Tracking</span>
+        <h3>Real-Time Seat Availability</h3>
+        <p class="meta">Monitor remaining venue capacity live and manage all your passes in one place.</p>
+    </div>
+</div>
+
+<section>
+    <div class="section-header">
+        <div>
+            <h2>Featured Events</h2>
+            <p class="section-subtitle">Upcoming highlights open for registration</p>
+        </div>
+        <a href="{{ url_for('events.list_events') }}" class="link-more">View All Events &rarr;</a>
+    </div>
+    <div class="grid">
+        {% for event in featured_events %}
+        {% set booked = event['booked_count'] | default(0, true) %}
+        {% set remaining = event['capacity'] - booked %}
+        <div class="card event-card">
+            <div class="event-card-banner">
+                <span class="badge">{{ event['category_name'] }}</span>
+                <span class="seat-pill">{{ remaining }} seats left</span>
+            </div>
+            <div class="event-card-body">
+                <div>
+                    <h3>{{ event['title'] }}</h3>
+                    <div class="event-meta-list">
+                        <p class="meta"><strong>Date:</strong> {{ event['date'] }}</p>
+                        <p class="meta"><strong>Venue:</strong> {{ event['venue'] }}</p>
+                        <p class="meta"><strong>Organizer:</strong> {{ event['organizer_name'] }}</p>
+                    </div>
+                    <p class="desc">{{ event['description'] }}</p>
+                </div>
+                <div>
+                    <div class="capacity-wrap">
+                        <div class="capacity-header">
+                            <span>Availability</span>
+                            <span>{{ remaining }} / {{ event['capacity'] }} seats</span>
+                        </div>
+                        <progress class="capacity-progress" value="{{ booked }}" max="{{ event['capacity'] }}"></progress>
+                    </div>
+                    <a href="{{ url_for('events.event_detail', event_id=event['id']) }}" class="btn btn-primary btn-block">View Details &amp; Book</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

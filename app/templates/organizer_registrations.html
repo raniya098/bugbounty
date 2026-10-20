@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="section-header">
+    <div>
+        <h1>Registrations: {{ event['title'] }}</h1>
+        <p class="section-subtitle">{{ event['date'] }} &bull; {{ event['venue'] }}</p>
+    </div>
+    <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-secondary">&larr; Back to Organizer Dashboard</a>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Booking ID</th>
+                    <th>Participant Name</th>
+                    <th>Participant Email</th>
+                    <th>Ticket Type</th>
+                    <th>Quantity</th>
+                    <th>Status</th>
+                    <th>Booked At</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for reg in registrations %}
+                <tr>
+                    <td>#{{ reg['booking_id'] }}</td>
+                    <td><strong>{{ reg['participant_name'] }}</strong></td>
+                    <td>{{ reg['participant_email'] }}</td>
+                    <td>{{ reg['ticket_type'] }}</td>
+                    <td>{{ reg['quantity'] }}</td>
+                    <td><span class="badge">{{ reg['status'] }}</span></td>
+                    <td>{{ reg['created_at'] }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="empty-state">No bookings recorded for this event yet.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
