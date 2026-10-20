@@ -86,25 +86,11 @@ img, svg, video, canvas {
 
 /* Spacious Centered Container with Generous Breathing Room */
 .container {
-    width: 90%;
+    width: 100%;
     max-width: 1260px;
     margin: 0 auto;
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-}
-
-@media (min-width: 768px) {
-    .container {
-        padding-left: 2.5rem;
-        padding-right: 2.5rem;
-    }
-}
-
-@media (min-width: 1200px) {
-    .container {
-        padding-left: 3rem;
-        padding-right: 3rem;
-    }
+    padding-left: clamp(1rem, 4vw, 3rem);
+    padding-right: clamp(1rem, 4vw, 3rem);
 }
 
 .sr-only {
@@ -299,18 +285,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .hero {
     background: linear-gradient(135deg, var(--brand-950) 0%, var(--brand-800) 50%, var(--brand-600) 100%);
     color: var(--text-on-brand);
-    padding: 4.5rem 2.5rem;
+    padding: clamp(2.5rem, 7vw, 5.5rem) clamp(1.25rem, 5vw, 4rem);
     border-radius: var(--radius-xl);
     text-align: center;
     margin-bottom: var(--space-12);
     box-shadow: var(--shadow-lg);
     border: 1px solid rgba(167, 139, 250, 0.22);
-}
-
-@media (min-width: 768px) {
-    .hero {
-        padding: 5.5rem 4rem;
-    }
 }
 
 .hero-eyebrow {
@@ -420,9 +400,23 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 
 @media (min-width: 680px) {
     .stats-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 1.75rem;
     }
+}
+
+@media (min-width: 1080px) {
+    .stats-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+.stats-grid > *,
+.grid > *,
+.events-grid > *,
+.detail-layout > *,
+.dashboard-layout > * {
+    min-width: 0;
 }
 
 .detail-layout,
