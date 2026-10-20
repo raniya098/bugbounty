@@ -8,7 +8,9 @@ def create_app(config_class=Config):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(config_class)
 
-    os.makedirs(app.instance_path, exist_ok=True)
+    db_dir = os.path.dirname(app.config["DATABASE_PATH"])
+    if db_dir:
+        os.makedirs(db_dir, exist_ok=True)
 
     app.teardown_appcontext(close_db)
     app.before_request(load_logged_in_user)
