@@ -7,30 +7,49 @@ document.addEventListener("DOMContentLoaded", () => {
             const isOpen = primaryNav.classList.toggle("is-open");
             navToggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
         });
+
+        primaryNav.addEventListener("click", (event) => {
+            if (event.target.closest("a") && window.matchMedia("(max-width: 767px)").matches) {
+                primaryNav.classList.remove("is-open");
+                navToggle.setAttribute("aria-expanded", "false");
+            }
+        });
     }
 
-    // 2. Auto-dismiss flash alerts after 5 seconds
+    // 2. Animate capacity indicators from empty to their current value.
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!reduceMotion) {
+        document.querySelectorAll(".capacity-progress").forEach((progress) => {
+            const targetValue = Number(progress.value);
+            if (targetValue > 0) {
+                progress.value = 0;
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(() => { progress.value = targetValue; });
+                });
+            }
+        });
+    }
+
+    // 3. Auto-dismiss flash alerts after 5 seconds with a brief fade.
     const alerts = document.querySelectorAll(".flash-messages .alert");
     alerts.forEach((alert) => {
         setTimeout(() => {
-            alert.style.transition = "opacity 0.3s ease";
-            alert.style.opacity = "0";
-            setTimeout(() => alert.remove(), 300);
+            alert.classList.add("is-dismissing");
+            setTimeout(() => alert.remove(), reduceMotion ? 0 : 250);
         }, 5000);
     });
 
-    // 3. Quick-fill demo credentials on Login page
-    const demoButtons = document.querySelectorAll("[data-demo-email]");
-    const emailInput = document.getElementById("email");
-    const passwordInput = document.getElementById("password");
-
-    demoButtons.forEach((btn) => {
-        btn.addEventListener("click", () => {
-            if (emailInput && passwordInput) {
-                emailInput.value = btn.getAttribute("data-demo-email");
-                passwordInput.value = "Password123!";
-                emailInput.focus();
+    // 4. Prevent accidental duplicate submissions on ticket booking.
+    const bookingForm = document.querySelector("form[action*='/book/']");
+    if (bookingForm) {
+        bookingForm.addEventListener("submit", () => {
+            const submitButton = bookingForm.querySelector("button[type='submit']");
+            if (submitButton) {
+                submitButton.disabled = true;
+                submitButton.setAttribute("aria-busy", "true");
+                submitButton.textContent = "Booking…";
             }
         });
-    });
+    }
+
 });

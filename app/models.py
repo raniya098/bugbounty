@@ -1,4 +1,5 @@
 import uuid
+import os
 from werkzeug.security import generate_password_hash
 from app.database import get_db
 
@@ -35,6 +36,8 @@ CREATE TABLE IF NOT EXISTS bookings (
     user_id INTEGER NOT NULL,
     event_id INTEGER NOT NULL,
     ticket_type TEXT NOT NULL DEFAULT 'Standard',
+    unit_price INTEGER NOT NULL DEFAULT 299,
+    currency TEXT NOT NULL DEFAULT 'INR',
     quantity INTEGER NOT NULL CHECK(quantity >= 1),
     status TEXT NOT NULL DEFAULT 'Confirmed',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -57,6 +60,12 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users (id)
 );
+
+CREATE TABLE IF NOT EXISTS auth_login_attempts (
+    email_hash TEXT PRIMARY KEY,
+    attempts INTEGER NOT NULL,
+    window_started INTEGER NOT NULL
+);
 """
 
 def log_action(user_id, action):
@@ -71,8 +80,59 @@ def init_and_seed_db():
     db = get_db()
     db.executescript(SCHEMA_SQL)
 
+    # Add price snapshots to databases created by older versions of EventHub.
+    booking_columns = {
+        row["name"] for row in db.execute("PRAGMA table_info(bookings)").fetchall()
+    }
+    if "unit_price" not in booking_columns:
+        db.execute("ALTER TABLE bookings ADD COLUMN unit_price INTEGER NOT NULL DEFAULT 0")
+        db.execute(
+            """UPDATE bookings
+               SET unit_price = CASE ticket_type
+                   WHEN 'Student' THEN 200
+                   WHEN 'VIP' THEN 799
+                   ELSE 299
+               END"""
+        )
+    if "currency" not in booking_columns:
+        db.execute("ALTER TABLE bookings ADD COLUMN currency TEXT NOT NULL DEFAULT 'INR'")
+    db.commit()
+
     user_count = db.execute("SELECT COUNT(*) AS cnt FROM users").fetchone()["cnt"]
     if user_count > 0:
+        return
+
+    categories = [
+        ("Technology",),
+        ("Cybersecurity",),
+        ("Workshop",),
+        ("Cultural & Networking",),
+        ("AI & Data Science",),
+        ("Cloud Computing",),
+    ]
+    db.executemany("INSERT OR IGNORE INTO event_categories (name) VALUES (?)", categories)
+
+    on_serverless = bool(os.environ.get("VERCEL") or os.environ.get("VERCEL_ENV"))
+    production = on_serverless or os.environ.get("FLASK_ENV") == "production"
+    seed_demo_data = os.environ.get("SEED_DEMO_DATA", "false" if production else "true").lower() in {
+        "1", "true", "yes"
+    }
+    if production and seed_demo_data:
+        raise RuntimeError("Set SEED_DEMO_DATA=false in production; demo accounts use known passwords.")
+    if not seed_demo_data:
+        admin_email = os.environ.get("INITIAL_ADMIN_EMAIL", "").strip().lower()
+        admin_password = os.environ.get("INITIAL_ADMIN_PASSWORD", "")
+        if admin_email and len(admin_password) >= 10:
+            db.execute(
+                """INSERT INTO users (name, email, password_hash, role)
+                   VALUES ('EventHub Admin', ?, ?, 'admin')""",
+                (admin_email, generate_password_hash(admin_password)),
+            )
+        elif production:
+            raise RuntimeError(
+                "Set INITIAL_ADMIN_EMAIL and a 10+ character INITIAL_ADMIN_PASSWORD before initializing the production database."
+            )
+        db.commit()
         return
 
     # Seed fictional test accounts (Password: Password123!)
@@ -89,16 +149,6 @@ def init_and_seed_db():
     )
 
     # Seed Categories
-    categories = [
-        ("Technology",),            # ID 1
-        ("Cybersecurity",),         # ID 2
-        ("Workshop",),              # ID 3
-        ("Cultural & Networking",), # ID 4
-        ("AI & Data Science",),     # ID 5
-        ("Cloud Computing",)        # ID 6
-    ]
-    db.executemany("INSERT OR IGNORE INTO event_categories (name) VALUES (?)", categories)
-
     # 15 Events across different categories
     events = [
         (
@@ -217,24 +267,28 @@ def init_and_seed_db():
 
     # Seed initial bookings and tickets for Alice (user_id=4) and Bob (user_id=5)
     cursor1 = db.execute(
-        "INSERT INTO bookings (user_id, event_id, ticket_type, quantity, status) VALUES (?, ?, ?, ?, 'Confirmed')",
-        (4, 1, "VIP", 2)
+        """INSERT INTO bookings
+           (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
+           VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
+        (4, 1, "VIP", 799, 2)
     )
     b1_id = cursor1.lastrowid
     for _ in range(2):
         db.execute(
             "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
-            (b1_id, f"TKT-{uuid.uuid4().hex[:8].upper()}")
+            (b1_id, f"TKT-{uuid.uuid4().hex.upper()}")
         )
 
     cursor2 = db.execute(
-        "INSERT INTO bookings (user_id, event_id, ticket_type, quantity, status) VALUES (?, ?, ?, ?, 'Confirmed')",
-        (5, 2, "Standard", 1)
+        """INSERT INTO bookings
+           (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
+           VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
+        (5, 2, "Standard", 299, 1)
     )
     b2_id = cursor2.lastrowid
     db.execute(
         "INSERT INTO tickets (booking_id, ticket_code, status) VALUES (?, ?, 'Valid')",
-        (b2_id, f"TKT-{uuid.uuid4().hex[:8].upper()}")
+        (b2_id, f"TKT-{uuid.uuid4().hex.upper()}")
     )
 
     db.commit()

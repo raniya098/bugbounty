@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, abort
 from app.database import get_db
 from app.models import log_action
 from app.security import role_required
@@ -35,6 +35,22 @@ def update_role(user_id):
         return redirect(url_for("admin.panel"))
 
     db = get_db()
+    target = db.execute("SELECT id, role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if target is None:
+        abort(404)
+
+    if target["role"] == "admin" and new_role != "admin":
+        admin_count = db.execute(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin'"
+        ).fetchone()[0]
+        if admin_count <= 1:
+            flash("The last administrator cannot be removed or demoted.", "error")
+            return redirect(url_for("admin.panel"))
+
+    if target["role"] == new_role:
+        flash(f"User #{user_id} already has the {new_role} role.", "success")
+        return redirect(url_for("admin.panel"))
+
     db.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
     db.commit()
     log_action(g.user["id"], f"Updated user #{user_id} role to {new_role}")

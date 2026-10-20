@@ -3,12 +3,21 @@
 <div class="section-header">
     <div>
         <h1>Registrations: {{ event['title'] }}</h1>
-        <p class="section-subtitle">{{ event['date'] }} &bull; {{ event['venue'] }}</p>
+        <p class="section-subtitle">{{ event['date']|event_datetime }} &bull; {{ event['venue'] }}</p>
     </div>
     <a href="{{ url_for('organizer.dashboard') }}" class="btn btn-secondary">&larr; Back to Organizer Dashboard</a>
 </div>
 
 <div class="card">
+    <h2>Check In a Ticket</h2>
+    <p class="meta">Enter the ticket code shown on the attendee's pass. Each ticket can be checked in once.</p>
+    <form method="POST" action="{{ url_for('organizer.check_in_ticket', event_id=event['id']) }}" class="filter-bar">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="sr-only" for="ticket-code">Ticket code</label>
+        <input id="ticket-code" name="ticket_code" type="text" placeholder="TKT-…" required autocomplete="off">
+        <button type="submit" class="btn btn-primary">Check In</button>
+    </form>
+
     <div class="table-responsive">
         <table class="table">
             <thead>

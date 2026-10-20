@@ -44,7 +44,7 @@
                             <strong>{{ t['event_title'] }}</strong>
                         </a>
                     </td>
-                    <td>{{ t['event_date'] }} &bull; {{ t['venue'] }}</td>
+                    <td>{{ t['event_date']|event_datetime }} &bull; {{ t['venue'] }}</td>
                     <td>{{ t['ticket_type'] }}</td>
                     <td><span class="badge">{{ t['status'] }}</span></td>
                     <td>

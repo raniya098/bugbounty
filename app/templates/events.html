@@ -3,7 +3,7 @@
 <div class="section-header">
     <div>
         <h1>All Upcoming Events</h1>
-        <p class="section-subtitle">Browse verified campus conferences, technical workshops, and networking sessions</p>
+        <p class="section-subtitle">Browse upcoming campus conferences, technical workshops, and networking sessions</p>
     </div>
     <p class="results-summary" aria-live="polite">
         Showing <strong>{{ events | length }}</strong> event{% if (events | length) != 1 %}s{% endif %}
@@ -43,6 +43,13 @@
             {% endfor %}
         </select>
 
+        <label for="event-sort-select" class="sr-only">Sort events</label>
+        <select id="event-sort-select" name="sort" aria-label="Sort events">
+            <option value="date_asc" {% if sort == 'date_asc' %}selected{% endif %}>Soonest first</option>
+            <option value="date_desc" {% if sort == 'date_desc' %}selected{% endif %}>Latest first</option>
+            <option value="title" {% if sort == 'title' %}selected{% endif %}>Title A–Z</option>
+        </select>
+
         <button type="submit" class="btn btn-primary">Search</button>
         <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary">Reset</a>
     </form>
@@ -53,7 +60,7 @@
     {% for event in events %}
     {% set has_booked_count = event['booked_count'] is defined and event['booked_count'] is not none %}
     {% set booked = event['booked_count'] if has_booked_count else 0 %}
-    {% set remaining = (event['capacity'] - booked) if has_booked_count else event['capacity'] %}
+    {% set remaining = ([event['capacity'] - booked, 0] | max) if has_booked_count else event['capacity'] %}
     <article class="card event-card">
         <!-- Consistent 16:9 Local SVG Event Banner -->
         <div class="event-card-media">
@@ -112,7 +119,7 @@
                 <div class="event-meta-list">
                     <div class="meta-item">
                         <span class="meta-label">Date:</span>
-                        <span>{{ event['date'] }}</span>
+                        <span>{{ event['date']|event_datetime }}</span>
                     </div>
                     <div class="meta-item">
                         <span class="meta-label">Venue:</span>
@@ -164,4 +171,18 @@
     </div>
     {% endfor %}
 </div>
+
+{% if total_pages > 1 %}
+<nav class="pagination" aria-label="Event pages">
+    {% if page > 1 %}
+    <a class="btn btn-secondary"
+       href="{{ url_for('events.list_events', q=search_query, category=selected_category, sort=sort, page=page - 1) }}">Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a class="btn btn-secondary"
+       href="{{ url_for('events.list_events', q=search_query, category=selected_category, sort=sort, page=page + 1) }}">Next</a>
+    {% endif %}
+</nav>
+{% endif %}
 {% endblock %}

@@ -49,6 +49,7 @@
                     <td><span class="badge">{{ u['role'] }}</span></td>
                     <td>
                         <form method="POST" action="{{ url_for('admin.update_role', user_id=u['id']) }}" class="inline-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                             <select name="role">
                                 <option value="participant" {% if u['role'] == 'participant' %}selected{% endif %}>participant</option>
                                 <option value="organizer" {% if u['role'] == 'organizer' %}selected{% endif %}>organizer</option>

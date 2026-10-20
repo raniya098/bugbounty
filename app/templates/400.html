@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card empty-state-card">
+    <h1>Form expired</h1>
+    <p class="meta">{{ error.description or "This request could not be verified." }}</p>
+    <a href="{{ url_for('index') }}" class="btn btn-primary">Return to EventHub</a>
+</div>
+{% endblock %}

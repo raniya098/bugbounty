@@ -89,7 +89,7 @@
                                 </a>
                             </td>
                             <td><span class="badge">{{ ev['category_name'] }}</span></td>
-                            <td>{{ ev['event_date'] }}</td>
+                            <td>{{ ev['event_date']|event_datetime }}</td>
                             <td>{{ ev['venue'] }}</td>
                             <td><strong>{{ ev['user_tickets_for_event'] }}</strong> pass{% if ev['user_tickets_for_event'] != 1 %}es{% endif %}</td>
                             <td>
@@ -132,6 +132,7 @@
                             <th>Event</th>
                             <th>Event Date</th>
                             <th>Tier &amp; Qty</th>
+                            <th>Booking Total</th>
                             <th>Status</th>
                             <th>Booked On</th>
                             <th>Receipt</th>
@@ -146,14 +147,21 @@
                                     <strong>{{ b['event_title'] }}</strong>
                                 </a>
                             </td>
-                            <td>{{ b['event_date'] }}</td>
+                            <td>{{ b['event_date']|event_datetime }}</td>
                             <td>{{ b['quantity'] }} &times; {{ b['ticket_type'] }}</td>
+                            <td>{{ b['currency'] or 'INR' }} {{ "%.2f"|format(b['unit_price'] * b['quantity']) }}</td>
                             <td><span class="badge">{{ b['status'] }}</span></td>
                             <td>{{ b['created_at'] }}</td>
                             <td>
-                                <a href="{{ url_for('bookings.confirmation', booking_id=b['id']) }}" class="btn btn-secondary btn-sm">
-                                    View Receipt
-                                </a>
+                                <div class="action-group">
+                                    <a href="{{ url_for('bookings.confirmation', booking_id=b['id']) }}" class="btn btn-secondary btn-sm">View Booking</a>
+                                    {% if b['status'] == 'Confirmed' and b['event_date'] > now_event_time %}
+                                    <form method="POST" action="{{ url_for('bookings.cancel_booking', booking_id=b['id']) }}" onsubmit="return confirm('Cancel this booking? Its tickets will no longer be valid.');">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                        <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                                    </form>
+                                    {% endif %}
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}

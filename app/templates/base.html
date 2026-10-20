@@ -19,6 +19,7 @@
                 {% if g.user %}
                     <a href="{{ url_for('tickets.my_tickets') }}">My Tickets</a>
                     <a href="{{ url_for('auth.dashboard') }}">Profile</a>
+                    <a href="{{ url_for('auth.account') }}">Account Settings</a>
                     {% if g.user['role'] in ['organizer', 'admin'] %}
                         <a href="{{ url_for('organizer.dashboard') }}">Organizer</a>
                     {% endif %}
@@ -26,7 +27,10 @@
                         <a href="{{ url_for('admin.panel') }}">Admin</a>
                     {% endif %}
                     <span class="user-pill">{{ g.user['name'] }} ({{ g.user['role'] }})</span>
-                    <a href="{{ url_for('auth.logout') }}" class="btn btn-outline">Logout</a>
+                    <form method="POST" action="{{ url_for('auth.logout') }}" class="logout-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                        <button type="submit" class="btn btn-outline">Logout</button>
+                    </form>
                 {% else %}
                     <a href="{{ url_for('auth.login') }}">Login</a>
                     <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Register</a>

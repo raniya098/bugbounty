@@ -215,7 +215,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 }
 
 .nav-links {
-    display: none;
+    display: flex;
     width: 100%;
     flex-direction: column;
     align-items: stretch;
@@ -223,9 +223,18 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     padding-top: 1rem;
     margin-top: 0.75rem;
     border-top: 1px solid rgba(255, 255, 255, 0.1);
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    visibility: hidden;
+    transition: max-height 0.22s ease, opacity 0.18s ease, visibility 0.22s;
 }
 
-.nav-links.is-open { display: flex; }
+.nav-links.is-open {
+    max-height: 70vh;
+    opacity: 1;
+    visibility: visible;
+}
 
 .nav-links a:not(.btn) {
     color: #cbd5e1;
@@ -265,6 +274,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
         padding-top: 0;
         margin-top: 0;
         border-top: none;
+        max-height: none;
+        overflow: visible;
+        opacity: 1;
+        visibility: visible;
+        transition: none;
     }
     .nav-links a:not(.btn) { padding: 0.4rem 0.4rem; }
 }
@@ -273,6 +287,12 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     flex: 1;
     padding: 2.5rem 0 4rem;
     width: 100%;
+    animation: content-enter 0.22s ease-out both;
+}
+
+@keyframes content-enter {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 /* Spacious Hero Banner */
@@ -723,6 +743,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .capacity-progress::-moz-progress-bar {
     background: linear-gradient(90deg, var(--brand-500) 0%, #ec4899 100%);
     border-radius: var(--radius-pill);
+    transition: width 0.65s ease;
+}
+
+.capacity-progress::-webkit-progress-value {
+    transition: width 0.65s ease;
 }
 
 /* Category Filter Pills */
@@ -731,6 +756,20 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
     flex-direction: column;
     gap: 1rem;
     margin-bottom: 2rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin: 2rem 0;
+    flex-wrap: wrap;
+}
+
+.logout-form {
+    display: inline-flex;
+    margin: 0;
 }
 
 .category-pills {
@@ -1002,6 +1041,18 @@ input:focus, select:focus, textarea:focus {
     font-size: 0.95rem;
     box-shadow: var(--shadow-xs);
     overflow-wrap: break-word;
+    animation: alert-enter 0.2s ease-out both;
+    transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+.alert.is-dismissing {
+    opacity: 0;
+    transform: translateY(-4px);
+}
+
+@keyframes alert-enter {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
 .alert-success {
@@ -1122,6 +1173,23 @@ input:focus, select:focus, textarea:focus {
     margin-top: auto;
     font-size: 0.88rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    .event-card:hover,
+    .event-card:focus-within,
+    .btn-primary:hover {
+        transform: none;
+    }
 }
 
 @media print {

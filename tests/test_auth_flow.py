@@ -64,7 +64,7 @@ class EventHubAuthFlowTestCase(unittest.TestCase):
         self.assertEqual(res_dash.status_code, 200)
 
         # Logout
-        res_out = self.client.get("/logout", follow_redirects=True)
+        res_out = self.client.post("/logout", follow_redirects=True)
         self.assertIn(b"You have been logged out", res_out.data)
 
         # Protected page should now redirect to login or deny access

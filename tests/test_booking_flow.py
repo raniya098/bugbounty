@@ -35,7 +35,7 @@ class EventHubBookingFlowTestCase(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertIn(b"Booking Confirmation", res.data)
         self.assertIn(b"VIP Pass", res.data)
-        self.assertIn(b"59.98", res.data) # Total price for 2 VIP @ $29.99
+        self.assertIn(b"1598.00", res.data) # Total price for 2 VIP tickets at ₹799 each
 
     def test_invalid_quantity_rejected(self):
         self.login("bob@eventhub.local")

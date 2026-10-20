@@ -19,9 +19,9 @@
         <p class="meta">Receive unique, verifiable ticket codes immediately upon booking confirmation.</p>
     </div>
     <div class="card stat-card">
-        <span class="badge">Verified Organizers</span>
+        <span class="badge">Event Hosts</span>
         <h3>Curated Tech Sessions</h3>
-        <p class="meta">Hands-on workshops, AppSec summits, and conferences hosted by domain leads.</p>
+        <p class="meta">Hands-on workshops, AppSec summits, and conferences hosted by campus organizers.</p>
     </div>
     <div class="card stat-card">
         <span class="badge">Live Tracking</span>
@@ -41,7 +41,7 @@
     <div class="grid">
         {% for event in featured_events %}
         {% set booked = event['booked_count'] | default(0, true) %}
-        {% set remaining = event['capacity'] - booked %}
+        {% set remaining = [event['capacity'] - booked, 0] | max %}
         <div class="card event-card">
             <div class="event-card-banner">
                 <span class="badge">{{ event['category_name'] }}</span>
@@ -51,7 +51,7 @@
                 <div>
                     <h3>{{ event['title'] }}</h3>
                     <div class="event-meta-list">
-                        <p class="meta"><strong>Date:</strong> {{ event['date'] }}</p>
+                        <p class="meta"><strong>Date:</strong> {{ event['date']|event_datetime }}</p>
                         <p class="meta"><strong>Venue:</strong> {{ event['venue'] }}</p>
                         <p class="meta"><strong>Organizer:</strong> {{ event['organizer_name'] }}</p>
                     </div>

@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 {% block content %}
 {% set booked = event['booked_count'] | default(0, true) %}
-{% set remaining = event['capacity'] - booked %}
-{% set pct = ((booked / event['capacity']) * 100) | round | int if event['capacity'] > 0 else 0 %}
 
 <div style="margin-bottom: 1.5rem;">
-    <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary btn-sm">&larr; Back to Event Listings</a>
+    <a href="{{ url_for('events.list_events') }}" class="btn btn-secondary btn-sm">
+        &larr; Back to Event Listings
+    </a>
 </div>
 
 <div class="detail-layout">
@@ -13,14 +13,20 @@
     <div class="card" style="padding: 0; overflow: hidden;">
         <!-- Event Banner Graphic -->
         <div class="event-card-media" style="aspect-ratio: 21 / 9;">
-            <svg class="event-card-svg" viewBox="0 0 840 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ event['category_name'] }} event banner">
+            <svg class="event-card-svg"
+                 viewBox="0 0 840 360"
+                 xmlns="http://www.w3.org/2000/svg"
+                 role="img"
+                 aria-label="{{ event['category_name'] }} event banner">
                 <defs>
-                    <linearGradient id="detail-bg-{{ event['id'] }}" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <linearGradient id="detail-bg-{{ event['id'] }}"
+                                    x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stop-color="#0f172a" />
                         <stop offset="50%" stop-color="#2e1065" />
                         <stop offset="100%" stop-color="#6d28d9" />
                     </linearGradient>
-                    <linearGradient id="detail-acc-{{ event['id'] }}" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <linearGradient id="detail-acc-{{ event['id'] }}"
+                                    x1="0%" y1="0%" x2="100%" y2="0%">
                         <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.4" />
                         <stop offset="100%" stop-color="#ec4899" stop-opacity="0.25" />
                     </linearGradient>
@@ -28,8 +34,10 @@
                 <rect width="840" height="360" fill="url(#detail-bg-{{ event['id'] }})" />
                 <circle cx="700" cy="80" r="160" fill="url(#detail-acc-{{ event['id'] }})" />
                 <circle cx="120" cy="300" r="130" fill="url(#detail-acc-{{ event['id'] }})" />
-                <path d="M0 280 Q 220 210 420 280 T 840 240 L 840 360 L 0 360 Z" fill="rgba(255,255,255,0.05)" />
+                <path d="M0 280 Q 220 210 420 280 T 840 240 L 840 360 L 0 360 Z"
+                      fill="rgba(255,255,255,0.05)" />
             </svg>
+
             <div class="event-card-overlay">
                 <div class="event-card-top-tags">
                     <span class="badge">{{ event['category_name'] }}</span>
@@ -39,12 +47,14 @@
         </div>
 
         <div style="padding: 2rem;">
-            <h1 style="font-size: clamp(1.5rem, 3vw, 2.2rem); margin-bottom: 1rem;">{{ event['title'] }}</h1>
+            <h1 style="font-size: clamp(1.5rem, 3vw, 2.2rem); margin-bottom: 1rem;">
+                {{ event['title'] }}
+            </h1>
 
             <div class="event-meta-list" style="margin-bottom: 1.5rem;">
                 <div class="meta-item">
                     <span class="meta-label">Date &amp; Time:</span>
-                    <span><strong>{{ event['date'] }}</strong></span>
+                    <span><strong>{{ event['date']|event_datetime }}</strong></span>
                 </div>
                 <div class="meta-item">
                     <span class="meta-label">Venue:</span>
@@ -59,22 +69,30 @@
             <hr class="divider">
 
             <h3 style="margin-bottom: 0.75rem;">About This Event</h3>
-            <!-- Safely rendered using Jinja2 auto-escaping (preventing raw injection / XSS) -->
-            <p class="desc" style="font-size: 1rem; line-height: 1.8; white-space: pre-line;">{{ event['description'] }}</p>
+            <p class="desc" style="font-size: 1rem; line-height: 1.8; white-space: pre-line;">
+                {{ event['description'] }}
+            </p>
 
             <hr class="divider">
 
-            <h3 style="margin-bottom: 0.75rem;">Configured Ticket Tiers &amp; Pricing</h3>
+            <h3 style="margin-bottom: 0.75rem;">Ticket Prices</h3>
             <div class="stats-grid" style="margin-bottom: 0;">
                 <div class="card" style="margin-bottom: 0; background: var(--surface-page);">
-                    <span class="badge">Standard Pass</span>
-                    <h4 style="font-size: 1.25rem; margin: 0.25rem 0;">Free / Included</h4>
-                    <p class="meta">General admission access to all keynote sessions and expo floors.</p>
+                    <span class="badge">Student Pass</span>
+                    <h4 style="font-size: 1.25rem; margin: 0.25rem 0;">₹200</h4>
+                    <p class="meta">Student admission.</p>
                 </div>
+
                 <div class="card" style="margin-bottom: 0; background: var(--surface-page);">
-                    <span class="badge">VIP Tier</span>
-                    <h4 style="font-size: 1.25rem; margin: 0.25rem 0;">Reserved Seating</h4>
-                    <p class="meta">Priority front-row seating and direct networking with guest organizers.</p>
+                    <span class="badge">Standard Pass</span>
+                    <h4 style="font-size: 1.25rem; margin: 0.25rem 0;">₹299</h4>
+                    <p class="meta">General admission.</p>
+                </div>
+
+                <div class="card" style="margin-bottom: 0; background: var(--surface-page);">
+                    <span class="badge">VIP Pass</span>
+                    <h4 style="font-size: 1.25rem; margin: 0.25rem 0;">₹799</h4>
+                    <p class="meta">Reserved seating.</p>
                 </div>
             </div>
         </div>
@@ -83,58 +101,70 @@
     <!-- Booking Sidebar Column -->
     <div class="card sticky-card">
         <h3>Reserve Tickets</h3>
+
         <div class="capacity-wrap">
             <div class="capacity-header">
-                <span>Real-Time Availability</span>
-                <span><strong>{{ remaining_seats }}</strong> / {{ event['capacity'] }} seats</span>
+                <span>Seat Availability</span>
+                <span>
+                    <strong>{{ remaining_seats }}</strong> / {{ event['capacity'] }} seats
+                </span>
             </div>
-            <progress class="capacity-progress" value="{{ booked }}" max="{{ event['capacity'] }}" aria-label="Seat availability progress"></progress>
+            <progress class="capacity-progress"
+                      value="{{ booked }}"
+                      max="{{ event['capacity'] }}"
+                      aria-label="Booked seats for this event">
+            </progress>
         </div>
-        <p class="meta">Policy: Maximum 4 tickets per user registration.</p>
+
+        <p class="meta">Maximum 4 tickets per user registration.</p>
 
         {% if g.user %}
             {% if remaining_seats > 0 %}
-            <form method="POST" action="{{ url_for('bookings.create_booking', event_id=event['id']) }}" class="form-stack">
-                <div class="form-group">
-                    <label for="ticket_type">Select Ticket Type</label>
-                    <select name="ticket_type" id="ticket_type" required>
-                        <option value="Standard">Standard Admission (Free)</option>
-                        <option value="Student">Student Pass (Free)</option>
-                        <option value="VIP">VIP Reserved Pass</option>
-                    </select>
-                </div>
+                <form method="POST"
+                      action="{{ url_for('bookings.create_booking', event_id=event['id']) }}"
+                      class="form-stack">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <div class="form-group">
+                        <label for="ticket_type">Select Ticket Type</label>
+                        <select name="ticket_type" id="ticket_type" required>
+                            <option value="Student">Student Pass — ₹200</option>
+                            <option value="Standard">Standard Admission — ₹299</option>
+                            <option value="VIP">VIP Reserved Pass — ₹799</option>
+                        </select>
+                    </div>
 
-                <div class="form-group">
-                    <label for="quantity">Quantity (1 - 4)</label>
-                    <input type="number" name="quantity" id="quantity" min="1" max="4" value="1" required>
-                </div>
+                    <div class="form-group">
+                        <label for="quantity">Quantity (1–4)</label>
+                        <input type="number"
+                               name="quantity"
+                               id="quantity"
+                               min="1"
+                               max="4"
+                               value="1"
+                               required>
+                    </div>
 
-                <button type="submit" class="btn btn-primary btn-block">Book Tickets Now</button>
-            </form>
+                    <button type="submit" class="btn btn-primary btn-block">
+                        Book Tickets
+                    </button>
+                </form>
             {% else %}
-                <div class="alert alert-error" style="margin-top: 1rem;">This event is currently sold out.</div>
+                <div class="alert alert-error" style="margin-top: 1rem;">
+                    This event is currently sold out.
+                </div>
             {% endif %}
         {% else %}
             <div class="hint-box">
-                <p>Please <a href="{{ url_for('auth.login') }}"><strong>sign in</strong></a> or <a href="{{ url_for('auth.register') }}"><strong>create an account</strong></a> to proceed with ticket booking.</p>
+                <p>
+                    Please
+                    <a href="{{ url_for('auth.login') }}"><strong>sign in</strong></a>
+                    or
+                    <a href="{{ url_for('auth.register') }}"><strong>create an account</strong></a>
+                    to book tickets.
+                </p>
             </div>
         {% endif %}
     </div>
 </div>
-
-<script>
-document.addEventListener("DOMContentLoaded", () => {
-    const bookingForm = document.querySelector("form[action*='/book/']");
-    if (bookingForm) {
-        bookingForm.addEventListener("submit", (e) => {
-            const submitBtn = bookingForm.querySelector("button[type='submit']");
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = "Processing Booking...";
-            }
-        });
-    }
-});
-</script>
 
 {% endblock %}

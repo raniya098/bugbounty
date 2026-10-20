@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, abort
 from app.database import get_db
+from app.time_utils import current_event_time
 
 events_bp = Blueprint("events", __name__)
 
@@ -15,9 +16,9 @@ def list_events():
         FROM events e
         JOIN event_categories c ON e.category_id = c.id
         JOIN users u ON e.organizer_id = u.id
-        WHERE 1=1
+        WHERE e.date >= ?
     """
-    params = []
+    params = [current_event_time()]
 
     if search_query:
         sql += " AND e.title LIKE ?"
@@ -27,8 +28,23 @@ def list_events():
         sql += " AND e.category_id = ?"
         params.append(int(category_id))
 
-    sql += " ORDER BY e.date ASC"
-    events = db.execute(sql, params).fetchall()
+    sort = request.args.get("sort", "date_asc")
+    order_by = {
+        "date_asc": "e.date ASC",
+        "date_desc": "e.date DESC",
+        "title": "e.title COLLATE NOCASE ASC",
+    }.get(sort, "e.date ASC")
+    page = max(1, request.args.get("page", 1, type=int))
+    per_page = 6
+    total_events = db.execute(
+        f"SELECT COUNT(*) FROM ({sql}) AS filtered_events", params
+    ).fetchone()[0]
+    total_pages = max(1, (total_events + per_page - 1) // per_page)
+    page = min(page, total_pages)
+    events = db.execute(
+        f"{sql} ORDER BY {order_by} LIMIT ? OFFSET ?",
+        [*params, per_page, (page - 1) * per_page],
+    ).fetchall()
     categories = db.execute("SELECT * FROM event_categories ORDER BY name ASC").fetchall()
 
     return render_template(
@@ -36,7 +52,10 @@ def list_events():
         events=events,
         categories=categories,
         search_query=search_query,
-        selected_category=category_id
+        selected_category=category_id,
+        page=page,
+        total_pages=total_pages,
+        sort=sort,
     )
 
 @events_bp.route("/events/<int:event_id>")

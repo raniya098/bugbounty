@@ -1,8 +1,14 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g
+import hashlib
+import hmac
+import re
+import sqlite3
+import time
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, g, current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.database import get_db
 from app.models import log_action
 from app.security import login_required
+from app.time_utils import current_event_time
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -21,8 +27,8 @@ def register():
             flash("Name, email, and password are required.", "error")
             return render_template("register.html")
 
-        if len(password) < 6:
-            flash("Password must be at least 6 characters long.", "error")
+        if len(password) < 10:
+            flash("Password must be at least 10 characters long.", "error")
             return render_template("register.html")
 
         db = get_db()
@@ -52,12 +58,41 @@ def login():
         password = request.form.get("password", "")
 
         db = get_db()
+        email_hash = hmac.new(
+            current_app.config["SECRET_KEY"].encode("utf-8"),
+            email.encode("utf-8"),
+            hashlib.sha256,
+        ).hexdigest()
+        now = int(time.time())
+        attempt = db.execute(
+            "SELECT attempts, window_started FROM auth_login_attempts WHERE email_hash = ?",
+            (email_hash,),
+        ).fetchone()
+        if attempt and now - attempt["window_started"] < 900 and attempt["attempts"] >= 5:
+            flash("Too many sign-in attempts. Please try again in 15 minutes.", "error")
+            return render_template("login.html")
+        if attempt and now - attempt["window_started"] >= 900:
+            db.execute("DELETE FROM auth_login_attempts WHERE email_hash = ?", (email_hash,))
+
         user = db.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
 
         if user is None or not check_password_hash(user["password_hash"], password):
+            if attempt and now - attempt["window_started"] < 900:
+                db.execute(
+                    "UPDATE auth_login_attempts SET attempts = attempts + 1 WHERE email_hash = ?",
+                    (email_hash,),
+                )
+            else:
+                db.execute(
+                    "INSERT OR REPLACE INTO auth_login_attempts (email_hash, attempts, window_started) VALUES (?, 1, ?)",
+                    (email_hash, now),
+                )
+            db.commit()
             flash("Invalid email or password.", "error")
             return render_template("login.html")
 
+        db.execute("DELETE FROM auth_login_attempts WHERE email_hash = ?", (email_hash,))
+        db.commit()
         session.clear()
         session["user_id"] = user["id"]
         log_action(user["id"], "Logged in")
@@ -66,13 +101,71 @@ def login():
 
     return render_template("login.html")
 
-@auth_bp.route("/logout")
+@auth_bp.route("/logout", methods=["POST"])
 def logout():
     if g.user:
         log_action(g.user["id"], "Logged out")
     session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for("index"))
+
+
+@auth_bp.route("/account", methods=["GET", "POST"])
+@login_required
+def account():
+    db = get_db()
+    if request.method == "POST":
+        action = request.form.get("action", "profile")
+
+        if action == "profile":
+            name = request.form.get("name", "").strip()
+            email = request.form.get("email", "").strip().lower()
+            phone = request.form.get("phone", "").strip()
+            if not name or len(name) > 100 or not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+                flash("Enter a name (up to 100 characters) and a valid email address.", "error")
+                return render_template("account.html")
+            try:
+                db.execute(
+                    "UPDATE users SET name = ?, email = ?, phone = ? WHERE id = ?",
+                    (name, email, phone, g.user["id"]),
+                )
+                db.commit()
+            except sqlite3.IntegrityError:
+                db.rollback()
+                flash("That email address is already used by another account.", "error")
+                return render_template("account.html")
+            log_action(g.user["id"], "Updated account profile")
+            flash("Your profile has been updated.", "success")
+            return redirect(url_for("auth.account"))
+
+        if action == "password":
+            current_password = request.form.get("current_password", "")
+            new_password = request.form.get("new_password", "")
+            confirm_password = request.form.get("confirm_password", "")
+            user = db.execute(
+                "SELECT password_hash FROM users WHERE id = ?", (g.user["id"],)
+            ).fetchone()
+            if not check_password_hash(user["password_hash"], current_password):
+                flash("Your current password is incorrect.", "error")
+            elif len(new_password) < 10:
+                flash("Your new password must be at least 10 characters long.", "error")
+            elif new_password != confirm_password:
+                flash("The new passwords do not match.", "error")
+            elif new_password == current_password:
+                flash("Choose a new password that differs from your current one.", "error")
+            else:
+                db.execute(
+                    "UPDATE users SET password_hash = ? WHERE id = ?",
+                    (generate_password_hash(new_password), g.user["id"]),
+                )
+                db.commit()
+                log_action(g.user["id"], "Changed account password")
+                flash("Your password has been changed.", "success")
+                return redirect(url_for("auth.account"))
+        else:
+            flash("Choose a valid account action.", "error")
+
+    return render_template("account.html")
 
 @auth_bp.route("/dashboard")
 @login_required
@@ -83,7 +176,8 @@ def dashboard():
 
     # 1. Booking history for the logged-in user
     bookings = db.execute(
-        """SELECT b.id, b.event_id, b.ticket_type, b.quantity, b.status, b.created_at,
+        """SELECT b.id, b.event_id, b.ticket_type, b.unit_price, b.currency,
+                  b.quantity, b.status, b.created_at,
                   e.title AS event_title, e.date AS event_date, e.venue,
                   c.name AS category_name
            FROM bookings b
@@ -128,5 +222,6 @@ def dashboard():
         upcoming_events=upcoming_events,
         total_bookings=len(bookings),
         total_tickets=total_tickets,
-        active_tickets=active_tickets
+        active_tickets=active_tickets,
+        now_event_time=current_event_time(),
     )
