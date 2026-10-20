@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_event_artwork.html" import event_artwork %}
 {% block content %}
 <section class="hero">
     <span class="hero-eyebrow">Campus &amp; Tech Event Platform</span>
@@ -43,10 +44,7 @@
         {% set booked = event['booked_count'] | default(0, true) %}
         {% set remaining = [event['capacity'] - booked, 0] | max %}
         <div class="card event-card">
-            <div class="event-card-banner">
-                <span class="badge">{{ event['category_name'] }}</span>
-                <span class="seat-pill">{{ remaining }} seats left</span>
-            </div>
+            {{ event_artwork(event, remaining=remaining) }}
             <div class="event-card-body">
                 <div>
                     <h3>{{ event['title'] }}</h3>

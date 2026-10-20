@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_event_artwork.html" import event_artwork %}
 {% block content %}
 <div class="section-header">
     <div>
@@ -62,49 +63,7 @@
     {% set booked = event['booked_count'] if has_booked_count else 0 %}
     {% set remaining = ([event['capacity'] - booked, 0] | max) if has_booked_count else event['capacity'] %}
     <article class="card event-card">
-        <!-- Consistent 16:9 Local SVG Event Banner -->
-        <div class="event-card-media">
-            <svg class="event-card-svg" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="{{ event['category_name'] }} event illustration">
-                <defs>
-                    <linearGradient id="bg-{{ event['id'] }}" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#0f172a" />
-                        <stop offset="50%" stop-color="#3b0764" />
-                        <stop offset="100%" stop-color="#6d28d9" />
-                    </linearGradient>
-                    <linearGradient id="accent-{{ event['id'] }}" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.35" />
-                        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.2" />
-                    </linearGradient>
-                </defs>
-                <rect width="640" height="360" fill="url(#bg-{{ event['id'] }})" />
-                <circle cx="540" cy="70" r="140" fill="url(#accent-{{ event['id'] }})" />
-                <circle cx="90" cy="310" r="110" fill="url(#accent-{{ event['id'] }})" />
-                <path d="M0 260 Q 180 200 340 270 T 640 230 L 640 360 L 0 360 Z" fill="rgba(255,255,255,0.06)" />
-                <g stroke="rgba(255,255,255,0.12)" stroke-width="1">
-                    <line x1="0" y1="90" x2="640" y2="90" />
-                    <line x1="0" y1="180" x2="640" y2="180" />
-                    <line x1="0" y1="270" x2="640" y2="270" />
-                    <line x1="160" y1="0" x2="160" y2="360" />
-                    <line x1="320" y1="0" x2="320" y2="360" />
-                    <line x1="480" y1="0" x2="480" y2="360" />
-                </g>
-            </svg>
-            <div class="event-card-overlay">
-                <div class="event-card-top-tags">
-                    <span class="badge">{{ event['category_name'] }}</span>
-                    {% if has_booked_count %}
-                        {% if remaining > 0 %}
-                            <span class="seat-pill">{{ remaining }} seats left</span>
-                        {% else %}
-                            <span class="seat-pill sold-out">Sold Out</span>
-                        {% endif %}
-                    {% else %}
-                        <span class="seat-pill">Capacity: {{ event['capacity'] }}</span>
-                    {% endif %}
-                </div>
-                <span class="event-card-id">EVENT #{{ event['id'] }}</span>
-            </div>
-        </div>
+        {{ event_artwork(event, remaining=remaining) }}
 
         <!-- Card Body -->
         <div class="event-card-body">

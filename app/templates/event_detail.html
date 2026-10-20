@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_event_artwork.html" import event_artwork %}
 {% block content %}
 {% set booked = event['booked_count'] | default(0, true) %}
 
@@ -11,40 +12,7 @@
 <div class="detail-layout">
     <!-- Main Event Information Column -->
     <div class="card" style="padding: 0; overflow: hidden;">
-        <!-- Event Banner Graphic -->
-        <div class="event-card-media" style="aspect-ratio: 21 / 9;">
-            <svg class="event-card-svg"
-                 viewBox="0 0 840 360"
-                 xmlns="http://www.w3.org/2000/svg"
-                 role="img"
-                 aria-label="{{ event['category_name'] }} event banner">
-                <defs>
-                    <linearGradient id="detail-bg-{{ event['id'] }}"
-                                    x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stop-color="#0f172a" />
-                        <stop offset="50%" stop-color="#2e1065" />
-                        <stop offset="100%" stop-color="#6d28d9" />
-                    </linearGradient>
-                    <linearGradient id="detail-acc-{{ event['id'] }}"
-                                    x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.4" />
-                        <stop offset="100%" stop-color="#ec4899" stop-opacity="0.25" />
-                    </linearGradient>
-                </defs>
-                <rect width="840" height="360" fill="url(#detail-bg-{{ event['id'] }})" />
-                <circle cx="700" cy="80" r="160" fill="url(#detail-acc-{{ event['id'] }})" />
-                <circle cx="120" cy="300" r="130" fill="url(#detail-acc-{{ event['id'] }})" />
-                <path d="M0 280 Q 220 210 420 280 T 840 240 L 840 360 L 0 360 Z"
-                      fill="rgba(255,255,255,0.05)" />
-            </svg>
-
-            <div class="event-card-overlay">
-                <div class="event-card-top-tags">
-                    <span class="badge">{{ event['category_name'] }}</span>
-                    <span class="seat-pill">EVENT ID #{{ event['id'] }}</span>
-                </div>
-            </div>
-        </div>
+        {{ event_artwork(event, remaining=remaining_seats, detail=true) }}
 
         <div style="padding: 2rem;">
             <h1 style="font-size: clamp(1.5rem, 3vw, 2.2rem); margin-bottom: 1rem;">

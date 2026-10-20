@@ -1,0 +1,109 @@
+{% macro event_artwork(event, remaining=None, detail=false) -%}
+{% set theme = {
+    'Technology': 'technology',
+    'Cybersecurity': 'security',
+    'Workshop': 'workshop',
+    'Cultural & Networking': 'culture',
+    'AI & Data Science': 'data',
+    'Cloud Computing': 'cloud'
+}.get(event['category_name'], 'technology') %}
+<div class="event-card-media event-artwork event-artwork--{{ theme }}{% if detail %} event-artwork--detail{% endif %}">
+    <svg class="event-artwork-svg"
+         viewBox="0 0 640 360"
+         xmlns="http://www.w3.org/2000/svg"
+         role="img"
+         aria-label="{{ event['category_name'] }} artwork for {{ event['title'] }}">
+        <defs>
+            <linearGradient id="art-bg-{{ event['id'] }}" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stop-color="var(--artwork-start)" />
+                <stop offset="100%" stop-color="var(--artwork-end)" />
+            </linearGradient>
+            <radialGradient id="art-glow-{{ event['id'] }}">
+                <stop offset="0%" stop-color="var(--artwork-accent)" stop-opacity="0.62" />
+                <stop offset="100%" stop-color="var(--artwork-accent)" stop-opacity="0" />
+            </radialGradient>
+            <pattern id="art-grid-{{ event['id'] }}" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M40 0H0V40" fill="none" stroke="#ffffff" stroke-opacity="0.07" stroke-width="1" />
+            </pattern>
+        </defs>
+
+        <rect width="640" height="360" fill="url(#art-bg-{{ event['id'] }})" />
+        <rect width="640" height="360" fill="url(#art-grid-{{ event['id'] }})" />
+        <circle cx="515" cy="165" r="185" fill="url(#art-glow-{{ event['id'] }})" />
+
+        {% if theme == 'technology' %}
+            <g class="artwork-motif" fill="none" stroke="#e9ddff" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M345 95h60v65h65m-125 42h72v-45h74m-111 92h56v-28h52" />
+                <circle cx="345" cy="95" r="7" fill="#c4b5fd" />
+                <circle cx="470" cy="160" r="7" fill="#c4b5fd" />
+                <circle cx="496" cy="157" r="7" fill="#c4b5fd" />
+                <circle cx="464" cy="249" r="7" fill="#c4b5fd" />
+                <rect x="382" y="121" width="73" height="73" rx="18" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.7" />
+                <path d="M404 145l-12 12 12 12m29-24 12 12-12 12m-10-29-9 34" stroke-width="4" />
+            </g>
+        {% elif theme == 'security' %}
+            <g class="artwork-motif" stroke="#dbfff3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M452 68l91 34v69c0 63-40 99-91 126-51-27-91-63-91-126v-69z" fill="#ffffff" fill-opacity="0.1" stroke-width="4" />
+                <path d="M452 96l64 24v49c0 45-26 73-64 95-38-22-64-50-64-95v-49z" fill="#ffffff" fill-opacity="0.05" stroke-opacity="0.55" stroke-width="2" />
+                <rect x="421" y="153" width="62" height="49" rx="10" fill="#ffffff" fill-opacity="0.22" stroke-width="3" />
+                <path d="M433 153v-14a19 19 0 0138 0v14m-19 19v12" fill="none" stroke-width="4" />
+                <circle cx="452" cy="172" r="4" fill="#dbfff3" stroke="none" />
+            </g>
+        {% elif theme == 'workshop' %}
+            <g class="artwork-motif" fill="none" stroke="#fff1cf" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M379 112l-31 31 31 31m105-62 31 31-31 31m-27-75-35 88" stroke-width="5" />
+                <rect x="365" y="84" width="165" height="121" rx="20" fill="#ffffff" fill-opacity="0.07" stroke-opacity="0.55" stroke-width="2" />
+                <path d="M400 244h114m-95 23h76" stroke-opacity="0.55" stroke-width="4" />
+                <circle cx="455" cy="244" r="7" fill="#ffd78d" stroke="none" />
+                <path d="M532 81l4 12 12 4-12 4-4 12-4-12-12-4 12-4z" fill="#ffd78d" stroke="none" />
+            </g>
+        {% elif theme == 'culture' %}
+            <g class="artwork-motif" fill="none" stroke="#ffe2f0" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M356 238h210M380 238V151a81 81 0 01162 0v87" stroke-opacity="0.8" stroke-width="4" />
+                <path d="M405 236v-57a56 56 0 01112 0v57" stroke-opacity="0.35" stroke-width="2" />
+                <path d="M461 91l30 69h-60z" fill="#ffffff" fill-opacity="0.13" stroke-width="3" />
+                <circle cx="461" cy="181" r="19" fill="#ffb3d5" fill-opacity="0.6" stroke="none" />
+                <path d="M461 203v30m-25 5h50" stroke-width="4" />
+                <path d="M559 94l5 14 14 5-14 5-5 14-5-14-14-5 14-5zm-203 39l4 10 10 4-10 4-4 10-4-10-10-4 10-4z" fill="#ffe2f0" stroke="none" />
+            </g>
+        {% elif theme == 'data' %}
+            <g class="artwork-motif" fill="none" stroke="#dcf7ff" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M376 113l65 32 61-47m-61 47-11 75m11-75 75 62m-75-62-85 77m85-77 68 94" stroke-opacity="0.7" stroke-width="3" />
+                <circle cx="376" cy="113" r="14" fill="#ffffff" fill-opacity="0.2" stroke-width="3" />
+                <circle cx="441" cy="145" r="20" fill="#ffffff" fill-opacity="0.2" stroke-width="3" />
+                <circle cx="502" cy="98" r="12" fill="#a5f3fc" stroke-width="3" />
+                <circle cx="430" cy="220" r="13" fill="#a5f3fc" stroke-width="3" />
+                <circle cx="516" cy="207" r="17" fill="#ffffff" fill-opacity="0.2" stroke-width="3" />
+                <circle cx="509" cy="301" r="11" fill="#a5f3fc" stroke-width="3" />
+                <circle cx="356" cy="222" r="10" fill="#a5f3fc" stroke-width="3" />
+            </g>
+        {% elif theme == 'cloud' %}
+            <g class="artwork-motif" fill="none" stroke="#def4ff" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M388 177a39 39 0 0174-20 47 47 0 0183 30 33 33 0 01-5 66H396a38 38 0 01-8-76z" fill="#ffffff" fill-opacity="0.12" stroke-width="4" />
+                <rect x="405" y="231" width="47" height="22" rx="6" fill="#ffffff" fill-opacity="0.2" stroke-width="2" />
+                <rect x="462" y="231" width="47" height="22" rx="6" fill="#ffffff" fill-opacity="0.2" stroke-width="2" />
+                <rect x="519" y="231" width="23" height="22" rx="6" fill="#ffffff" fill-opacity="0.2" stroke-width="2" />
+                <path d="M420 242h12m45 0h12m17 0h6" stroke-width="3" />
+            </g>
+        {% endif %}
+    </svg>
+
+    <div class="event-card-overlay">
+        <div class="event-card-top-tags">
+            <span class="badge">{{ event['category_name'] }}</span>
+            {% if remaining is not none %}
+                {% if remaining > 0 %}
+                    <span class="seat-pill">{{ remaining }} seats left</span>
+                {% else %}
+                    <span class="seat-pill sold-out">Sold Out</span>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div class="event-artwork-copy" aria-hidden="true">
+            <span>EVENTHUB · CAMPUS SERIES</span>
+            <strong>{{ event['title'] }}</strong>
+        </div>
+        <span class="event-card-id">EVENT #{{ event['id'] }}</span>
+    </div>
+</div>
+{%- endmacro %}
