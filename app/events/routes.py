@@ -16,7 +16,7 @@ def list_events():
         FROM events e
         JOIN event_categories c ON e.category_id = c.id
         JOIN users u ON e.organizer_id = u.id
-        WHERE e.date >= ?
+        WHERE replace(e.date, 'T', ' ') >= ?
     """
     params = [current_event_time()]
 
@@ -30,10 +30,10 @@ def list_events():
 
     sort = request.args.get("sort", "date_asc")
     order_by = {
-        "date_asc": "e.date ASC",
-        "date_desc": "e.date DESC",
+        "date_asc": "replace(e.date, 'T', ' ') ASC",
+        "date_desc": "replace(e.date, 'T', ' ') DESC",
         "title": "e.title COLLATE NOCASE ASC",
-    }.get(sort, "e.date ASC")
+    }.get(sort, "replace(e.date, 'T', ' ') ASC")
     page = max(1, request.args.get("page", 1, type=int))
     per_page = 6
     total_events = db.execute(

@@ -155,7 +155,7 @@
                             <td>
                                 <div class="action-group">
                                     <a href="{{ url_for('bookings.confirmation', booking_id=b['id']) }}" class="btn btn-secondary btn-sm">View Booking</a>
-                                    {% if b['status'] == 'Confirmed' and b['event_date'] > now_event_time %}
+                                    {% if b['status'] == 'Confirmed' and b['can_cancel'] %}
                                     <form method="POST" action="{{ url_for('bookings.cancel_booking', booking_id=b['id']) }}" onsubmit="return confirm('Cancel this booking? Its tickets will no longer be valid.');">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                         <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>

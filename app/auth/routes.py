@@ -189,13 +189,14 @@ def dashboard():
         """SELECT b.id, b.event_id, b.ticket_type, b.unit_price, b.currency,
                   b.quantity, b.status, b.created_at,
                   e.title AS event_title, e.date AS event_date, e.venue,
+                  CASE WHEN replace(e.date, 'T', ' ') > ? THEN 1 ELSE 0 END AS can_cancel,
                   c.name AS category_name
            FROM bookings b
            JOIN events e ON b.event_id = e.id
            JOIN event_categories c ON e.category_id = c.id
            WHERE b.user_id = ?
            ORDER BY b.created_at DESC, b.id DESC""",
-        (auth_user_id,)
+        (current_event_time(), auth_user_id)
     ).fetchall()
 
     # 2. Upcoming events the user has confirmed bookings for (ordered by event date)
@@ -208,9 +209,10 @@ def dashboard():
            JOIN events e ON b.event_id = e.id
            JOIN event_categories c ON e.category_id = c.id
            WHERE b.user_id = ? AND b.status = 'Confirmed'
+             AND replace(e.date, 'T', ' ') > ?
            GROUP BY e.id, e.title, e.date, e.venue, c.name
-           ORDER BY e.date ASC""",
-        (auth_user_id,)
+           ORDER BY replace(e.date, 'T', ' ') ASC""",
+        (auth_user_id, current_event_time())
     ).fetchall()
 
     # 3. Actual ticket count derived from the tickets table

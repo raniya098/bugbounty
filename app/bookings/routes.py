@@ -10,6 +10,7 @@ from flask import (
     current_app,
     abort,
     g,
+    session,
 )
 from werkzeug.exceptions import HTTPException
 
@@ -137,7 +138,7 @@ def create_booking(event_id):
             "Tickets booked successfully! View your booking summary below.",
             "success",
         )
-        return redirect(url_for("bookings.confirmation", booking_id=booking_id))
+        return redirect(url_for("bookings.payment_confirmation", booking_id=booking_id))
 
     except HTTPException:
         db.rollback()
@@ -173,7 +174,6 @@ def confirmation(booking_id):
         abort(404)
 
     check_ownership(booking["user_id"])
-
     unit_price = booking["unit_price"]
     total_price = unit_price * booking["quantity"]
 
@@ -225,3 +225,38 @@ def cancel_booking(booking_id):
     log_action(g.user["id"], f"Cancelled booking #{booking_id}")
     flash("Booking cancelled. The seats are available again.", "success")
     return redirect(url_for("auth.dashboard"))
+
+
+@bookings_bp.route("/payment/<int:booking_id>", methods=["GET", "POST"])
+@login_required
+def payment_confirmation(booking_id):
+    """Show a payment confirmation screen for an existing booking.
+
+    This is intentionally a confirmation step rather than a real payment
+    gateway. The confirmed state is kept in the user's session until a
+    payment provider is connected.
+    """
+    db = get_db()
+    booking = db.execute(
+        """SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue
+           FROM bookings b
+           JOIN events e ON e.id = b.event_id
+           WHERE b.id = ?""",
+        (booking_id,),
+    ).fetchone()
+
+    if booking is None:
+        abort(404)
+
+    check_ownership(booking["user_id"])
+    total_price = booking["unit_price"] * booking["quantity"]
+
+    if request.method == "POST":
+        session[f"payment_confirmed_{booking_id}"] = True
+
+    return render_template(
+        "payment_confirmation.html",
+        booking=booking,
+        total_price=total_price,
+        payment_confirmed=session.get(f"payment_confirmed_{booking_id}", False),
+    )

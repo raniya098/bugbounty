@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Payment Confirmation{% endblock %}
+
+{% block content %}
+<main class="container payment-page">
+    <section class="card payment-card">
+        {% if payment_confirmed %}
+            <div class="payment-success" role="status" aria-live="polite">
+                <span class="payment-icon">✓</span>
+                <p class="eyebrow">Demo checkout complete</p>
+                <h1>Your booking is confirmed</h1>
+                <p>Demo checkout for <strong>{{ booking.event_title }}</strong> is complete. No real payment was processed.</p>
+                <a class="btn btn-primary" href="{{ url_for('.confirmation', booking_id=booking.id) }}">
+                    View booking confirmation
+                </a>
+            </div>
+        {% else %}
+            <p class="eyebrow">Demo checkout</p>
+            <h1>Complete your booking</h1>
+            <p class="muted">This project does not connect to a payment provider. Continuing simulates checkout and does not charge you.</p>
+
+            <div class="payment-summary">
+                <div>
+                    <span>Event</span>
+                    <strong>{{ booking.event_title }}</strong>
+                </div>
+                <div>
+                    <span>Date</span>
+                    <strong>{{ booking.event_date }}</strong>
+                </div>
+                <div>
+                    <span>Venue</span>
+                    <strong>{{ booking.venue }}</strong>
+                </div>
+                <div>
+                    <span>Tickets</span>
+                    <strong>{{ booking.quantity }}</strong>
+                </div>
+                <div class="payment-total">
+                    <span>Total</span>
+                    <strong>₹{{ "%.2f"|format(total_price|float) }}</strong>
+                </div>
+            </div>
+
+            <form method="post" class="payment-form">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <label>
+                    Demo payment method
+                    <select name="payment_method" required>
+                        <option value="card">Card (demo only)</option>
+                        <option value="upi">UPI (demo only)</option>
+                        <option value="netbanking">Net banking (demo only)</option>
+                    </select>
+                </label>
+                <button class="btn btn-primary" type="submit">Complete demo checkout</button>
+            </form>
+        {% endif %}
+    </section>
+</main>
+{% endblock %}

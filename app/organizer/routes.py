@@ -323,12 +323,20 @@ def edit_event(event_id):
             flash("Please choose a valid event category.", "error")
             return render_template("event_form.html", categories=categories, event=event)
 
+        # datetime-local submits a T separator while older rows may contain a
+        # space. Compare canonical values so an unchanged past event remains
+        # editable (for example, to correct its venue or description).
+        submitted_date = date.replace("T", " ")
+        stored_date = event["date"].replace("T", " ")
+        date_is_unchanged = submitted_date == stored_date
         normalized_date = normalize_event_time(date) if _is_future_event_date(date) else None
-        if date != event["date"] and normalized_date is None:
+        if not date_is_unchanged and normalized_date is None:
             flash("Choose a future date and time (India time).", "error")
             return render_template("event_form.html", categories=categories, event=event)
         if normalized_date is not None:
             date = normalized_date
+        elif date_is_unchanged:
+            date = stored_date
 
         try:
             capacity = int(capacity_raw)

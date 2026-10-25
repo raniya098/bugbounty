@@ -65,8 +65,8 @@ def create_app(config_class=Config):
                FROM events e
                JOIN event_categories c ON e.category_id = c.id
                JOIN users u ON e.organizer_id = u.id
-               WHERE e.date >= ?
-               ORDER BY e.date ASC LIMIT 3""",
+               WHERE replace(e.date, 'T', ' ') >= ?
+               ORDER BY replace(e.date, 'T', ' ') ASC LIMIT 3""",
             (current_event_time(),)
         ).fetchall()
         return render_template("index.html", featured_events=featured_events)
