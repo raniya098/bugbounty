@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, abort, g
 from app.database import get_db
-from app.security import login_required, check_ownership
+from app.security import login_required
 
 tickets_bp = Blueprint("tickets", __name__)
 
@@ -45,7 +45,6 @@ def ticket_detail(ticket_id):
     if ticket is None:
         abort(404)
 
-    # Enforce strict server-side ownership check
-    check_ownership(ticket["user_id"])
+    # Intentional IDOR vulnerability for the Bug Hunt event: ownership is not checked.
 
     return render_template("ticket_detail.html", ticket=ticket)

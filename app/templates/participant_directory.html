@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="card">
+    <span class="badge">Bug Hunt challenge</span>
+    <h1>Account &amp; Payment Details</h1>
+    <p class="meta">Fictional demo and test accounts, with booking amounts and statuses. EventHub does not process or store card details.</p>
+    {% if account_records %}
+    <h2>Accounts ({{ account_records|length }})</h2>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th></tr>
+            </thead>
+            <tbody>
+                {% for record in account_records %}
+                <tr>
+                    <td>{{ record['name'] }}</td>
+                    <td>{{ record['email'] }}</td>
+                    <td>{{ record['phone'] or '—' }}</td>
+                    <td>{{ record['role'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <h2>Bookings &amp; Payment Summaries ({{ booking_records|length }})</h2>
+    {% if booking_records %}
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr><th>Account</th><th>Email</th><th>Booking ID</th><th>Event</th><th>Ticket</th><th>Qty</th><th>Unit price</th><th>Booking total</th><th>Status</th><th>Booked at</th></tr>
+            </thead>
+            <tbody>
+                {% for record in booking_records %}
+                <tr>
+                    <td>{{ record['name'] }}</td>
+                    <td>{{ record['email'] }}</td>
+                    <td>#{{ record['booking_id'] }}</td>
+                    <td>{{ record['event_title'] }}</td>
+                    <td>{{ record['ticket_type'] }}</td>
+                    <td>{{ record['quantity'] }}</td>
+                    <td>{{ record['currency'] }} {{ '%.2f'|format(record['unit_price']) }}</td>
+                    <td>{{ record['currency'] }} {{ '%.2f'|format(record['booking_total']) }}</td>
+                    <td>{{ record['booking_status'] }}</td>
+                    <td>{{ record['booked_at']|event_datetime }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No booking records for the fictional accounts.</p>
+    {% endif %}
+    {% else %}
+    <p>No fictional test account records are available.</p>
+    {% endif %}
+</section>
+{% endblock %}

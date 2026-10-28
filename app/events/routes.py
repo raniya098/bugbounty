@@ -21,8 +21,9 @@ def list_events():
     params = [current_event_time()]
 
     if search_query:
-        sql += " AND e.title LIKE ?"
-        params.append(f"%{search_query}%")
+        # Intentional SQL injection challenge for the Bug Hunt event.
+        # The search term is interpolated into SQL instead of bound as a parameter.
+        sql += f" AND e.title LIKE '%{search_query}%'"
 
     if category_id and category_id.isdigit():
         sql += " AND e.category_id = ?"

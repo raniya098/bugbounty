@@ -154,7 +154,13 @@
                             <td>{{ b['created_at'] }}</td>
                             <td>
                                 <div class="action-group">
+                                    {% if b['status'] == 'Pending' %}
+                                    <a href="{{ url_for('bookings.payment_confirmation', booking_id=b['id']) }}" class="btn btn-primary btn-sm">Complete Checkout</a>
+                                    {% elif b['status'] == 'Confirmed' %}
                                     <a href="{{ url_for('bookings.confirmation', booking_id=b['id']) }}" class="btn btn-secondary btn-sm">View Booking</a>
+                                    {% else %}
+                                    <span class="meta">No tickets issued</span>
+                                    {% endif %}
                                     {% if b['status'] == 'Confirmed' and b['can_cancel'] %}
                                     <form method="POST" action="{{ url_for('bookings.cancel_booking', booking_id=b['id']) }}" onsubmit="return confirm('Cancel this booking? Its tickets will no longer be valid.');">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">

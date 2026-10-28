@@ -10,7 +10,6 @@ from flask import (
     current_app,
     abort,
     g,
-    session,
 )
 from werkzeug.exceptions import HTTPException
 
@@ -112,31 +111,22 @@ def create_booking(event_id):
         cursor = db.execute(
             """INSERT INTO bookings
                (user_id, event_id, ticket_type, unit_price, currency, quantity, status)
-               VALUES (?, ?, ?, ?, 'INR', ?, 'Confirmed')""",
+               VALUES (?, ?, ?, ?, 'INR', ?, 'Pending')""",
             (g.user["id"], event_id, ticket_type, unit_price, quantity),
         )
         booking_id = cursor.lastrowid
-
-        for _ in range(quantity):
-            code = f"TKT-{uuid.uuid4().hex.upper()}"
-            db.execute(
-                """INSERT INTO tickets (booking_id, ticket_code, status)
-                   VALUES (?, ?, 'Valid')""",
-                (booking_id, code),
-            )
-
         db.commit()
 
         log_action(
             g.user["id"],
-            f"Created booking #{booking_id} "
+            f"Started checkout for booking #{booking_id} "
             f"({quantity}x {ticket_type} @ ₹{unit_price:.2f}) "
             f"for event #{event_id}",
         )
 
         flash(
-            "Tickets booked successfully! View your booking summary below.",
-            "success",
+            "Your selection is ready. Complete checkout to confirm the booking and issue tickets.",
+            "info",
         )
         return redirect(url_for("bookings.payment_confirmation", booking_id=booking_id))
 
@@ -174,6 +164,11 @@ def confirmation(booking_id):
         abort(404)
 
     check_ownership(booking["user_id"])
+    if booking["status"] == "Pending":
+        return redirect(url_for("bookings.payment_confirmation", booking_id=booking_id))
+    if booking["status"] != "Confirmed":
+        flash("This booking was not completed, so no tickets were issued.", "error")
+        return redirect(url_for("auth.dashboard"))
     unit_price = booking["unit_price"]
     total_price = unit_price * booking["quantity"]
 
@@ -232,13 +227,13 @@ def cancel_booking(booking_id):
 def payment_confirmation(booking_id):
     """Show a payment confirmation screen for an existing booking.
 
-    This is intentionally a confirmation step rather than a real payment
-    gateway. The confirmed state is kept in the user's session until a
-    payment provider is connected.
+    This is a simulated checkout, not a real payment gateway. A booking and
+    its tickets are confirmed only after the user submits this checkout form.
     """
     db = get_db()
     booking = db.execute(
-        """SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue
+        """SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue,
+                  e.capacity AS event_capacity
            FROM bookings b
            JOIN events e ON e.id = b.event_id
            WHERE b.id = ?""",
@@ -251,12 +246,83 @@ def payment_confirmation(booking_id):
     check_ownership(booking["user_id"])
     total_price = booking["unit_price"] * booking["quantity"]
 
-    if request.method == "POST":
-        session[f"payment_confirmed_{booking_id}"] = True
+    if request.method == "POST" and booking["status"] == "Pending":
+        try:
+            db.execute("BEGIN IMMEDIATE")
+            current = db.execute(
+                "SELECT status, user_id, event_id, quantity FROM bookings WHERE id = ?",
+                (booking_id,),
+            ).fetchone()
+            if current is None:
+                db.rollback()
+                abort(404)
+
+            if current["status"] == "Pending":
+                event = db.execute(
+                    "SELECT date, capacity FROM events WHERE id = ?",
+                    (current["event_id"],),
+                ).fetchone()
+                try:
+                    event_is_upcoming = parse_event_time(event["date"]) > parse_event_time(current_event_time())
+                except (TypeError, ValueError):
+                    event_is_upcoming = False
+
+                total_booked = db.execute(
+                    """SELECT COALESCE(SUM(quantity), 0) FROM bookings
+                       WHERE event_id = ? AND status = 'Confirmed'""",
+                    (current["event_id"],),
+                ).fetchone()[0]
+                user_booked = db.execute(
+                    """SELECT COALESCE(SUM(quantity), 0) FROM bookings
+                       WHERE user_id = ? AND event_id = ? AND status = 'Confirmed'""",
+                    (current["user_id"], current["event_id"]),
+                ).fetchone()[0]
+                max_per_user = current_app.config.get("MAX_TICKETS_PER_USER_PER_EVENT", 4)
+
+                if (
+                    not event_is_upcoming
+                    or total_booked + current["quantity"] > event["capacity"]
+                    or user_booked + current["quantity"] > max_per_user
+                ):
+                    db.execute(
+                        "UPDATE bookings SET status = 'Cancelled' WHERE id = ? AND status = 'Pending'",
+                        (booking_id,),
+                    )
+                    db.commit()
+                    flash("Checkout could not be completed because the event or ticket limit changed. No tickets were issued.", "error")
+                    return redirect(url_for("auth.dashboard"))
+
+                db.execute(
+                    "UPDATE bookings SET status = 'Confirmed' WHERE id = ? AND status = 'Pending'",
+                    (booking_id,),
+                )
+                for _ in range(current["quantity"]):
+                    code = f"TKT-{uuid.uuid4().hex.upper()}"
+                    db.execute(
+                        """INSERT INTO tickets (booking_id, ticket_code, status)
+                           VALUES (?, ?, 'Valid')""",
+                        (booking_id, code),
+                    )
+                db.commit()
+                log_action(g.user["id"], f"Completed demo checkout for booking #{booking_id}")
+        except HTTPException:
+            db.rollback()
+            raise
+        except Exception as e:
+            db.rollback()
+            current_app.logger.error(f"Checkout confirmation failed for booking #{booking_id}: {e}")
+            flash("Checkout could not be completed. Please try again.", "error")
+
+        booking = db.execute(
+            """SELECT b.*, e.title AS event_title, e.date AS event_date, e.venue,
+                      e.capacity AS event_capacity
+               FROM bookings b JOIN events e ON e.id = b.event_id
+               WHERE b.id = ?""",
+            (booking_id,),
+        ).fetchone()
 
     return render_template(
         "payment_confirmation.html",
         booking=booking,
         total_price=total_price,
-        payment_confirmed=session.get(f"payment_confirmed_{booking_id}", False),
     )

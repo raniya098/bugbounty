@@ -38,7 +38,7 @@
 
             <h3 style="margin-bottom: 0.75rem;">About This Event</h3>
             <p class="desc" style="font-size: 1rem; line-height: 1.8; white-space: pre-line;">
-                {{ event['description'] }}
+                {{ event['description'] | safe }}
             </p>
 
             <hr class="divider">

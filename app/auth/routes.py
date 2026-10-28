@@ -115,9 +115,57 @@ def login():
 def logout():
     if g.user:
         log_action(g.user["id"], "Logged out")
+    # Intentional session challenge: participant sessions remain active after
+    # normal logout. Other roles and anonymous sessions are cleared normally.
+    if not g.user or g.user["role"] != "participant":
+        session.clear()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("index"))
+
+
+@auth_bp.route("/logout/complete", methods=["POST"])
+@login_required
+def complete_logout():
+    """Allow organizers to end a test session after demonstrating the flaw."""
+    log_action(g.user["id"], "Ended session after Bug Hunt logout challenge")
     session.clear()
     flash("You have been logged out.", "success")
     return redirect(url_for("index"))
+
+
+@auth_bp.route("/participant-details")
+def participant_details():
+    """Intentional exposure challenge limited to fictional test accounts."""
+    db = get_db()
+    account_records = db.execute(
+        """SELECT id, name, email, phone, role
+           FROM users
+           WHERE email LIKE '%@eventhub.local' OR email LIKE '%@example.test'
+           ORDER BY name COLLATE NOCASE"""
+    ).fetchall()
+    booking_records = db.execute(
+        """SELECT u.name, u.email, u.phone, u.role,
+                  b.id AS booking_id, b.ticket_type, b.quantity, b.unit_price,
+                  b.currency, b.status AS booking_status, b.created_at AS booked_at,
+                  e.title AS event_title,
+                  (b.quantity * b.unit_price) AS booking_total
+           FROM users u
+           LEFT JOIN bookings b ON b.user_id = u.id
+           LEFT JOIN events e ON e.id = b.event_id
+           WHERE b.id IS NOT NULL
+             AND (u.email LIKE '%@eventhub.local' OR u.email LIKE '%@example.test')
+           ORDER BY u.name COLLATE NOCASE, b.id"""
+    ).fetchall()
+    return render_template(
+        "participant_directory.html",
+        account_records=account_records,
+        booking_records=booking_records,
+    )
+
+
+@auth_bp.route("/participant-directory")
+def participant_directory_legacy_url():
+    return redirect(url_for("auth.participant_details"))
 
 
 @auth_bp.route("/account", methods=["GET", "POST"])

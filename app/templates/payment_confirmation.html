@@ -5,7 +5,7 @@
 {% block content %}
 <main class="container payment-page">
     <section class="card payment-card">
-        {% if payment_confirmed %}
+        {% if booking.status == 'Confirmed' %}
             <div class="payment-success" role="status" aria-live="polite">
                 <span class="payment-icon">✓</span>
                 <p class="eyebrow">Demo checkout complete</p>
@@ -15,10 +15,18 @@
                     View booking confirmation
                 </a>
             </div>
+        {% elif booking.status == 'Cancelled' %}
+            <div class="payment-success" role="status" aria-live="polite">
+                <span class="payment-icon">!</span>
+                <p class="eyebrow">Checkout not completed</p>
+                <h1>Your booking was not confirmed</h1>
+                <p>No tickets were issued for <strong>{{ booking.event_title }}</strong>.</p>
+                <a class="btn btn-secondary" href="{{ url_for('auth.dashboard') }}">Back to My Bookings</a>
+            </div>
         {% else %}
             <p class="eyebrow">Demo checkout</p>
             <h1>Complete your booking</h1>
-            <p class="muted">This project does not connect to a payment provider. Continuing simulates checkout and does not charge you.</p>
+            <p class="muted">This project does not connect to a payment provider. Completing this demo checkout confirms the booking and issues tickets; no real payment is charged.</p>
 
             <div class="payment-summary">
                 <div>
